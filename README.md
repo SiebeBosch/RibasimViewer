@@ -1,7 +1,7 @@
 # RibasimViewer
 A universal webviewer for Deltares' Ribasim projects.
-The webviewer consists solely of HTML, Javascript and CSS, thus making it extremely lightweight and portable. 
-Using it is a matter of double-clicking index.html.
+The webviewer consists solely of HTML, Javascript and CSS, thus making it extremely lightweight and portable. A webserver is NOT necessary.
+Launching the application is a matter of double-clicking index.html.
 
 ## Requirements
 A token for Mapbox is required in order to plot the background map. This token should be implemented in config.js in the /js folder:
