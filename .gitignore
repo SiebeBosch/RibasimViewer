@@ -5,15 +5,15 @@
 
 #build
 tiles/*
-frontend/js/config.js
-frontend/js/watersurfaceareas.js
-frontend/js/MeshResults.js
-frontend/js/Mesh.js
-frontend/js/Centroids.js
-frontend/js/watersurfaceareas.js
-frontend/js/WQAreas.js
-frontend/js/WQResults.js
-frontend/js/reachobjectsverdict.js
-frontend/js/results.js
-frontend/js/structuresverdict.js
-frontend/js/watersurfaceareas.js old
+js/config.js
+js/watersurfaceareas.js
+js/MeshResults.js
+js/Mesh.js
+js/Centroids.js
+js/watersurfaceareas.js
+js/WQAreas.js
+js/WQResults.js
+js/reachobjectsverdict.js
+js/results.js
+js/structuresverdict.js
+js/watersurfaceareas.js old
