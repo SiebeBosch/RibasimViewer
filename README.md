@@ -1,5 +1,5 @@
 # RibasimViewer
-A universal webviewer for Deltares' Ribasim projects.
+A universal webviewer for Deltares' RIBASIM projects.
 The webviewer consists solely of HTML, Javascript and CSS, thus making it extremely lightweight and portable. A webserver is NOT necessary.
 Launching the application is simply a matter of double-clicking index.html.
 
