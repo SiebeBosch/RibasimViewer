@@ -3,7 +3,7 @@ A universal webviewer for Deltares' RIBASIM projects.
 The webviewer consists solely of HTML, Javascript and CSS, thus making it extremely lightweight and portable. A webserver is NOT necessary.
 Launching the application is simply a matter of double-clicking index.html.
 
-The application can be populated with a RIBASIM model topology and simulation results by using the Community Edition of Hydroconsult's HydroToolbox software (first release expected in October 2023).
+The viewer can be populated with a RIBASIM model topology and simulation results by using the Community Edition of Hydroconsult's HydroToolbox software (first release expected in October 2023).
 
 ![Alt text](./images/example.png)
 
