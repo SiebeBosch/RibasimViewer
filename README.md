@@ -10,7 +10,8 @@ A token for Mapbox is required in order to plot the background map. This token s
 
 let MAPBOX_TOKEN = 'your_mapbox_token';
 
-Request your own token at https://docs.mapbox.com/help/getting-started/access-tokens/
+Request your own token at https://docs.mapbox.com/help/getting-started/access-tokens/.
+In case the application is populated and launched from within the community edition of HydroToolbox (Hydroconsult) the required token is included.
 
 ## Populating the viewer
 Populating the viewer with the topology and results of your RIBASIM-project can be done with the Community Edition of HydroToolbox software (Hydroconsult, The Netherlands). 
