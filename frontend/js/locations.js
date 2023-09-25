@@ -1,0 +1,11 @@
+let locaties = {
+    "locations": [
+        { "ID": "Gemaal h1", "lat": 53.2354512268157, "lon": 6.93096376106788,"type":"waterhoogte", "WP": -3.6, "ZP": -3.3, "waterlevels":{"first":-3.8, "last":-3.65, "min":-3.8, "max":-1.94},"diffwp":{"first":-20, "last":-5, "min":-20, "max":166},"diffzp":{"first":-50, "last":-35, "min":-50, "max":136}},
+        { "ID": "Onderbemaling h1", "lat": 53.2441825716464, "lon": 6.93775213382387,"type":"waterhoogte", "WP": -3.9, "ZP": -3.45, "waterlevels":{"first":-2.93, "last":-3.64, "min":-3.64, "max":4.93},"diffwp":{"first":97, "last":26, "min":26, "max":883},"diffzp":{"first":52, "last":-19, "min":-19, "max":838}},
+        { "ID": "KST-O-17750 h1", "lat": 53.2237207276519, "lon": 6.89135695511023,"type":"waterhoogte", "WP": -3.6, "ZP": -3.3, "waterlevels":{"first":-3.07, "last":-3.65, "min":-3.65, "max":-1.94},"diffwp":{"first":53, "last":-5, "min":-5, "max":166},"diffzp":{"first":23, "last":-35, "min":-35, "max":136}},
+        { "ID": "KST-O-17750 h2", "lat": 53.2233802452371, "lon": 6.89263272496803,"type":"waterhoogte", "WP": -3.6, "ZP": -3.3, "waterlevels":{"first":-2.88, "last":-3.65, "min":-3.65, "max":-1.94},"diffwp":{"first":72, "last":-5, "min":-5, "max":166},"diffzp":{"first":42, "last":-35, "min":-35, "max":136}},
+        { "ID": "Slochterweg", "lat": 53.2003549955135, "lon": 6.83294151877463,"type":"waterhoogte", "WP": -3.45, "ZP": -2.85, "waterlevels":{"first":-1.95, "last":-3.5, "min":-3.5, "max":-1.83},"diffwp":{"first":150, "last":-5, "min":-5, "max":162},"diffzp":{"first":90, "last":-65, "min":-65, "max":102}},
+        { "ID": "Spitsbergen", "lat": 53.1755434160003, "lon": 6.83418811000785,"type":"waterhoogte", "WP": -1.75, "ZP": -1.25, "waterlevels":{"first":-0.09, "last":-2, "min":-2, "max":-0.09},"diffwp":{"first":166, "last":-25, "min":-25, "max":166},"diffzp":{"first":116, "last":-75, "min":-75, "max":116}},
+        { "ID": "Sappermeersterweg", "lat": 53.1932623785981, "lon": 6.84312935354648,"type":"waterhoogte", "WP": -1.75, "ZP": -1.25, "waterlevels":{"first":-0.68, "last":-2.15, "min":-2.15, "max":-0.4},"diffwp":{"first":107, "last":-40, "min":-40, "max":135},"diffzp":{"first":57, "last":-90, "min":-90, "max":85}},
+    ]
+};

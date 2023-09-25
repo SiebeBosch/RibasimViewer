@@ -1,0 +1,20 @@
+let Settings = {
+	"viewmode": "tiles",
+	"animationtimestepinterval":1,
+	"minzoomlevel":9,
+	"maxzoomlevel":18,
+	"maxnativezoom":13,
+	"show1Dresults":true,
+	"show2Dresults":true,
+	"observationpointsChecked":true,
+	"IWRMNodesChecked":true,
+	"calculationpointsChecked":true,
+	"structuresChecked":true,
+	"MeshAsCentroidsUntilZoomLevel":14,
+	"extent": {"ll":[6.07421566552022,53.1129860323643], "ur":[6.08319043373897,53.1174786830362]},
+	"SimulationT0": "0001-01-01T00:00:00.000Z",
+	"timesteps_second": [],
+	"timesteps_tilemap": [],
+	"scenarios": ["MeshC"],
+	"tileSize": 1024
+}

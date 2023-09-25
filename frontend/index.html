@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- copyright 2020, Siebe Bosch -->
+  <title>The Flooding webviewer</title>
+  <!-- <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+    crossorigin="" /> -->
+  <!-- <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+    integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+    crossorigin=""></script> -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script> -->
+  <!-- <script src="https://www.gstatic.com/charts/loader.js"></script> -->
+
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.0.0-beta.7/chart.min.js"></script> -->
+  <!-- <script src="https://kit.fontawesome.com/42e5b77852.js" crossorigin="anonymous"></script> -->
+  <script type="text/javascript" src="js/config.js"></script>
+  <script type="text/javascript" src="js/panels.js"></script>
+  <script type="text/javascript" src="js/Reaches.js"></script>
+  <script type="text/javascript" src="js/Observationpoints.js"></script>
+  <script type="text/javascript" src="js/IWRMNodes.js"></script>
+  <script type="text/javascript" src="js/Observationpointresults.js"></script>
+  <script type="text/javascript" src="js/Calculationpoints.js"></script>
+  <script type="text/javascript" src="js/CalcpntResults.js"></script>
+  <script type="text/javascript" src="js/Structures.js"></script>
+  <script type="text/javascript" src="js/StructureResults.js"></script>
+  <script type="text/javascript" src="js/measurements.js"></script>
+  <script type="text/javascript" src="js/hotspots.js"></script>
+  <script type="text/javascript" src="js/Colorgradients.js"></script>
+  <script type="text/javascript" src="js/subcatchments.js"></script>
+  <script type="text/javascript" src="js/generalfunctions.js"></script>
+  <script type="text/javascript" src="js/meshfunctions.js"></script>
+  <script type="text/javascript" src="js/chartfunctions.js"></script>
+  <script type="text/javascript" src="js/drawingfunctions.js"></script>
+  <script type="text/javascript" src="js/mapfunctions.js"></script>
+  <script type="text/javascript" src="js/validationtables.js"></script>
+  <script type="text/javascript" src="js/Mesh.js"></script>
+  <script type="text/javascript" src="js/Legend.js"></script>
+  <script type="text/javascript" src="js/Settings.js"></script>
+  <script type="text/javascript" src="js/Centroids.js"></script>
+  <script type="text/javascript" src="js/MeshResults.js"></script>
+  <script type="text/javascript" src="js/jquery-3.6.3.min.js"></script>
+  <script type="text/javascript" src="js/leaflet.js"></script>
+  <script type="text/javascript" src="js/chart.js"></script>
+  <script type="text/javascript" src="js/loader.js"></script>
+  <script type="text/javascript" src="js/fontawesome.js"></script>
+  <link rel="stylesheet" type="text/css" href="css/chart.css">
+  <link rel="stylesheet" type="text/css" href="css/map.css">
+  <link rel="stylesheet" type="text/css" href="css/legend.css">
+  <link rel="stylesheet" type="text/css" href="css/styling.css">
+  <link rel="stylesheet" type="text/css" href="css/leftpanel.css">
+  <link rel="stylesheet" type="text/css" href="css/timeslider.css">
+  <link rel="stylesheet" type="text/css" href="css/rightpanel.css">
+  <link rel="stylesheet" type="text/css" href="css/validationtable.css">
+  <link rel="stylesheet" type="text/css" href="css/weir-schematics.css">
+  <link rel="stylesheet" type="text/css" href="css/leaflet.css">
+
+  <script type="text/javascript" src="js/diamondmarker.js"></script>
+
+
+  <script type="text/javascript">
+
+    // Load the Visualization API and the corechart package.
+    // Set a callback to run when the Google Visualization API is loaded.
+    google.charts.load('current', { 'packages': ['corechart'] });
+    google.charts.setOnLoadCallback(drawChart2DDepth);
+
+    //define an enum for the active parameter
+    const ActiveParameter = {
+      WATERLEVEL: 0,
+      DISCHARGE: 1,
+      VOLUME: 2,
+    };
+
+    let scenarioIdx = 0;                        //we initialize the scenarios to be the first scenario from the array
+    let opacity = 0.9;                          //we initialize the opacity of our data layer to 0.9
+
+    let viewmode = Settings.viewmode;           //vectors or tiles
+    let minzoomlevel = Settings.minzoomlevel;
+    let maxzoomlevel = Settings.maxzoomlevel;
+    let maxNativeZoom = Settings.maxnativezoom;
+    let zoomthreshold = Settings.MeshAsCentroidsUntilZoomLevel;                     //the zoomlevel above/below which we'll switch between markers and mesh
+    let lastTimestepIdx = Settings.timesteps_second.length - 1;
+
+    var observationpointsChecked = Settings.observationpointsChecked;
+    var calculationpointsChecked = Settings.calculationpointsChecked;
+    var structuresChecked = Settings.structuresChecked;
+
+    //parameters to keep track of the active dambreak id and parameter
+    let active_breach_id;
+    let active_dambreak_parameter = "dambreak_crest_width";
+
+    //parameters to keep track of the active observation point id and parameter
+    let active_observationpoint_id;
+    let active_observationpoint_parameter = "observationpoint_waterlevel"
+
+    let xaxisrelative = false;        //whether to plot the chart's x axis in hours relative to the breach
+
+    let active_chart_source = 0;      //0 = 2D depths, 1 = 1D objects, 2 = dambreak
+    let ActiveID = ""
+    let activeObjectType = "";
+    let activeParameter = ActiveParameter.WATERLEVEL;
+
+    let activeTileLayerId = -999;	//the ID of the currently active tile layer 
+    let prevTileLayerId = -999;		//the ID of the previously active tile layer
+    let tileZIndex = 0;
+
+    //read the color gradients from our Colorgradients.js file
+    //first item is for depth
+    //second item is for velocity
+    //third item is for t_inund
+    let depthGradient = Colorgradients.Colorgradients[0];
+    let velocityGradient = Colorgradients.Colorgradients[1];
+    let tinundGradient = Colorgradients.Colorgradients[2];
+
+    // Callback that creates and populates a data table,
+    // instantiates the pie chart, passes in the data and
+    // draws it.
+    function movePopup(e, depth, cellidx) {
+      let bubble = document.querySelector("#bubble");
+      bubble.style.left = (e.x) - 115 + "px";
+      bubble.style.top = e.y - 11 + "px";
+      bubble.style.width = "100px";
+      bubble.style.display = "block";
+      bubble.innerHTML = "<div class='tooltip'>cel: #" + cellidx + "<br>tijdstap: " + getTimestep() + "<br>diepte: " + depth + " cm. " + "<br>t-inundatie: " + MeshResults.scenarios[scenarioIdx].features[cellidx].tinu + " uur.</div>";
+    }
+
+  </script>
+
+</head>
+
+<body>
+
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <button id="openLeftPanel" class="openbtn" onclick="openLeftPanel()">&#9776;</button>
+  <div id="timesliderpanel">
+    <div id="legendtitle">Tijd: 0d 00:00</div>
+    <div class="range-wrap"><input type="range" min="0" max="100" value="0" class="timeslider" id="timeSlider"
+        onchange="setTimestep(value, true)">
+    </div>
+    <div id="timecontrols">
+      <div class="playcontrols" onclick="rewind()"><i class="fas fa-fast-forward fa-flip-horizontal"></i></div>
+      <div class="playcontrols" onclick="stepBack()"><i class="fas fa-step-forward fa-flip-horizontal"></i></div>
+      <div class="playcontrols" id="btnplay"><i id="play_icon" class='fas fa-play'></i></div>
+      <div class="playcontrols" onclick="stepForward()"><i class="fas fa-step-forward"></i></div>
+      <div class="playcontrols" onclick="fastforward()"><i class="fas fa-fast-forward"></i></div>
+    </div>
+  </div>
+  <div id="leftpanel" class="leftpanel">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeLeftPanel()">&times;</a>
+    <hr class="divider">
+    <div class="radiogroup">
+      <div class="sectionheader">Achtergrond</div>
+      <div class="radiobutton"><input type="radio" name="backdrop" value="OSML" checked
+          onclick="refreshEntireMap('OSML')">openstreetmap light</div>
+      <div class="radiobutton"><input type="radio" name="backdrop" value="OSM"
+          onclick="refreshEntireMap('OSM')">openstreetmap</div>
+      <div class="radiobutton"><input type="radio" name="backdrop" value="PDOK" onclick="refreshEntireMap('PDOK')">PDOK
+        luchtfoto</input></div>
+      <div class="radiobutton"><input type="radio" name="backdrop" value="LUFO"
+          onclick="refreshEntireMap('LUFO')">Google aerial</input></div>
+      <div class="radiobutton"><input type="radio" name="backdrop" value="OSM_DARK"
+          onclick="refreshEntireMap('OSM_DARK')">donker</input></div>
+    </div>
+    <hr class="divider">
+    <div class="radiogroup">
+      <div class="sectionheader">1D Hydrodynamica</div>
+      <div class="radiobutton" id="divobservationpoints"><input type="checkbox" id="observationpoints" checked="true"
+          onclick="plot1DObjects()">observatiepunten</input></div>
+      <div class="radiobutton" id="divcalculationpoints"><input type="checkbox" id="calculationpoints" checked="true"
+          onclick="plot1DObjects()">rekenpunten</input></div>
+      <div class="radiobutton" id="divstructures"><input type="checkbox" id="structures"
+          onclick="plot1DObjects()">kunstwerken</input></div>
+      <div class="radiobutton"><input type="checkbox" id="reaches" checked="true"
+          onclick="plotReaches()">watergangen</input></div>
+      <div class="radiobutton" id="divhotspots"><input type="checkbox" id="hotspots" checked="true"
+          onclick="plot1DObjects()">knelpunten</input></div>
+    </div>
+    <hr class="divider">
+    <div class="radiogroup">
+      <div class="sectionheader">RIBASIM</div>
+      <div class="radiobutton" id="divIWRMBasins"><input type="checkbox" id="IWRMBasins" onclick="plot1DObjects()"
+          checked>Basins</input></div>
+      <div class="radiobutton" id="divIWRMManningResistance"><input type="checkbox" id="IWRMManningResistance"
+          onclick="plot1DObjects()" checked>Manning's resistance</input></div>
+      <div class="radiobutton" id="divIWRMTabulatedRatingCurve"><input type="checkbox" id="IWRMTabulatedRatingCurve"
+          onclick="plot1DObjects()" checked>Tabulated rating curve</input></div>
+      <div class="radiobutton" id="divIWRMFractionalFlow"><input type="checkbox" id="IWRMFractionalFlow"
+          onclick="plot1DObjects()" checked>Fractional flow</input></div>
+      <div class="radiobutton" id="divIWRMPump"><input type="checkbox" id="IWRMPump" onclick="plot1DObjects()"
+          checked>Pump</input></div>
+      <div class="radiobutton" id="divIWRMLinearResistance"><input type="checkbox" id="IWRMLinearResistance"
+          onclick="plot1DObjects()" checked>Linear Resistance</input></div>
+      <div class="radiobutton" id="divIWRMLevelBoundary"><input type="checkbox" id="IWRMLevelBoundary"
+          onclick="plot1DObjects()" checked>Level Boundary</input></div>
+      <div class="radiobutton" id="divIWRMFlowBoundary"><input type="checkbox" id="IWRMFlowBoundary"
+          onclick="plot1DObjects()" checked>Flow Boundary</input></div>
+      <div class="radiobutton" id="divIWRMTerminal"><input type="checkbox" id="IWRMTerminal" onclick="plot1DObjects()"
+          checked>Terminal</input></div>
+    </div>
+    <hr class="divider">
+    <div class="radiogroup">
+      <div class="sectionheader">Scenario</div>
+      <select class="scenarios" id="scenarioslist" onchange="switchScenario()">
+      </select>
+    </div>
+    <hr class="divider">
+    <div class="radiogroup">
+      <div class="sectionheader">Resultaten 1D</div>
+      <div class="radiobutton"><input type="radio" name="parameter1D" checked="true"
+          onclick="selected1DResults = 0;Update1DObjectsStyle(0)" />actuele waarde</div>
+      <div class="radiobutton" id="divdifferencewithmeasurements"><input type="radio" name="parameter1D"
+          onclick="selected1DResults = 1;Update1DObjectsStyle(0)" />verschil maximum met meting</div>
+    </div>
+    <hr class="divider">
+    <div class="radiogroup">
+      <div class="sectionheader">Resultaten 2D</div>
+      <div class="radiobutton"><input type="radio" name="parameter2D" value="waterdepth" checked="true"
+          onclick="selectedMap = 0;redrawSelectedMap(true)" />waterdiepte per tijdstap</div>
+      <div class="radiobutton"><input type="radio" name="parameter2D" value="maxdepth"
+          onclick="selectedMap = 1;redrawSelectedMap(true)" />maximumdiepte</input></div>
+      <div class="radiobutton"><input type="radio" name="parameter2D" value="maxdepth"
+          onclick="selectedMap = 2;redrawSelectedMap(true)" />stroomsnelheid per tijdstap</input></div>
+      <div class="radiobutton"><input type="radio" name="parameter2D" value="maxdepth"
+          onclick="selectedMap = 3;redrawSelectedMap(true)" />maximale stroomsnelheid</input></div>
+      <div class="radiobutton"><input type="radio" name="parameter2D" value="tinund"
+          onclick="selectedMap = 4;redrawSelectedMap(true)" />tijd tot inundatie</input></div>
+      <div class="radiobutton"><input type="radio" name="parameter2D" value="tinund"
+          onclick="selectedMap = 5;redrawSelectedMap(true)" />tijd tot 20 cm</input></div>
+      <div class="radiobutton"><input type="radio" name="parameter2D" value="tinund"
+          onclick="selectedMap = 6;redrawSelectedMap(true)" />tijd tot 50 cm</input></div>
+    </div>
+    <hr class="divider">
+    <div class="radiogroup">
+      <div class="sectionheader">Opties</div>
+      <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleChart()">toon
+        grafiek</input></div>
+      <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleSlider()">toon
+        slider</input></div>
+    </div>
+    <hr class="divider">
+    <div class="radiogroup">
+      <div class="sectionheader">Transparantie</div>
+      <div class="range-wrap"><input type="range" min="0" max="100" value="0" class="slider" id="transparency"
+          onChange="changeTransparency()"></div>
+    </div>
+    <hr class="divider">
+    <img id="logo" src="./images/HYDRO_LOGO_DEF.png">
+  </div>
+  <div id="mapid"></div>
+  <div id="bubble"></div>
+  <div class="chartcontainer" id="mychart">
+    <div id="chart_title">Verloop inundatie</div>
+    <div id="chart_div">
+    </div>
+    <div class="radiobutton"><input type="checkbox" id="xaxistype" value="false" onclick="toggleXAxis()">Tijd in
+      uren</input></div>
+    <div id="observationpointscontainer">
+      <button class="chartbutton" id="hbutton"
+        onclick="toggleObservationpointsParameter('observationpoint_waterlevel')">Hoogte</button>
+      <button class="chartbutton" id="qbutton"
+        onclick="toggleObservationpointsParameter('observationpoint_discharge')">Debiet</button>
+      <button class="chartbutton" id="cbutton"
+        onclick="toggleObservationpointsParameter('observationpoint_cumulative_discharge')">Q.Cum</button>
+    </div>
+    <div id="dambreakcontainer">
+      <button class="chartbutton" id="cwbutton"
+        onclick="toggleDambreakParameter('dambreak_crest_width')">Breedte</button>
+      <button class="chartbutton" id="clbutton" onclick="toggleDambreakParameter('dambreak_levels')">Hoogtes</button>
+      <button class="chartbutton" id="qbutton" onclick="toggleDambreakParameter('dambreak_discharge')">Debiet</button>
+      <button class="chartbutton" id="cumbutton"
+        onclick="toggleDambreakParameter('dambreak_cumulative_discharge')">Volume</button>
+      <button class="chartbutton" id="headbutton" onclick="toggleDambreakParameter('dambreak_head')">Verval</button>
+      <!-- <button class="chartbutton" id="growthbutton" onclick="toggleDambreakParameter('dambreak_growth')">Groei</button> -->
+    </div>
+    <div id="stats_div" class="stats_table">
+      <table id="stats_table" class="stats_table">
+        <tr>
+          <td>Maximale diepte (m)</td>
+          <td id="maxd"></td>
+        </tr>
+        <tr>
+          <td>Maximale stroomsnelheid (m/s)</td>
+          <td id="maxv"></td>
+        </tr>
+        <tr>
+          <td>Tijd tot inundatie (uren)</td>
+          <td id="tinund"></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+  <div id="legendcontainer">
+    <div id="legendtitle">Legenda</div>
+    <div id="legendlayeritems" class="legenditems">
+      <div id="legendlayer" class="legendunit">Waterdiepte (cm)</div>
+      <div id="legenditem">
+        <div
+          style="background-color: rgb(0,31,43); text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>&le; 100 cm</div>
+      </div>
+      <div id="legenditem">
+        <div
+          style="background-color: rgb(0, 65, 90); text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>&le; 75 cm</div>
+      </div>
+      <div id="legenditem">
+        <div
+          style="background-color: rgb(0, 113,156); text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>&le; 50 cm</div>
+      </div>
+      <div id="legenditem">
+        <div
+          style="background-color: rgb(0, 155, 214); text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>&le; 25 cm</div>
+      </div>
+      <div id="legenditem">
+        <div
+          style="background-color: rgb(0, 184, 255); text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>&le; 5 cm</div>
+      </div>
+      <div id="legenditem">
+        <div
+          style="background-color: white; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>0 tot 5 cm</div>
+      </div>
+    </div>
+    <br />
+    <div id="legendobjectitems" class="legenditems">
+      <div id="legendobjects" class="legendunit">Kaartobjecten:</div>
+      <div id="legenditem">
+        <div
+          style="background-color: white; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>rekenpunt</div>
+      </div>
+      <div id="legenditem">
+        <div
+          style="background-color: darkblue; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>observatiepunt</div>
+      </div>
+      <div id="legenditem">
+        <div
+          style="background-color: green; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>kunstwerk</div>
+      </div>
+      <div id="legenditem">
+        <div
+          style="background-color: purple; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>knelpunt</div>
+      </div>
+      <div id="legenditem">
+        <div
+          style="background-color: #E74C3C; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>breslocatie</div>
+      </div>
+      <div id="legenditem">
+        <div
+          style="background-color: orange; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>secundaire bres</div>
+      </div>
+    </div>
+  </div>
+  <div id="rightpanel" class="rightpanel closed">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeRightPanel()">&times;</a>
+    <div style='margin-top:20px'>
+      <a id="ObjectID">Validation report</a>
+      <div class="parametertable">
+        <table id="parameterstable" style="width:100%">
+          <tr>
+            <th>Parameter</th>
+            <th>Source value</th>
+            <th>Assigned value</th>clsResultsLocation
+          </tr>
+        </table>
+      </div>
+      <div class="rulestable">
+        <table id="rulestable" style="width:100%">
+          <tr>
+            <th>Validation Rule</th>
+            <th>Left val</th>
+            <th>Right val</th>
+            <th>Success</th>
+            <th>Penalty</th>
+            <th>Parameter</th>
+            <th>Original value</th>
+            <th>Overruled by</th>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+    //1D FLOW NODES
+    document.getElementById("observationpoints").checked = observationpointsChecked;
+    document.getElementById("calculationpoints").checked = calculationpointsChecked;
+    document.getElementById("structures").checked = structuresChecked;
+
+    //RIBASIM NODES
+    document.getElementById("IWRMBasins").checked = true;
+    document.getElementById("IWRMManningResistance").checked = true;
+    document.getElementById("IWRMTabulatedRatingCurve").checked = true;
+    document.getElementById("IWRMFractionalFlow").checked = true;
+    document.getElementById("IWRMPump").checked = true;
+    document.getElementById("IWRMLinearResistance").checked = true;
+    document.getElementById("IWRMLevelBoundary").checked = true;
+    document.getElementById("IWRMFlowBoundary").checked = true;
+    document.getElementById("IWRMTerminal").checked = true;
+
+    // Hide certain GUI elements if no data is available for them anyway
+
+    if (!Observationpoints || !Observationpoints.features || Observationpoints.features.length === 0) {
+      $("#divobservationpoints").hide();
+    }
+
+    if (!Calculationpoints || !Calculationpoints.features || Calculationpoints.features.length === 0) {
+      $("#divcalculationpoints").hide();
+    }
+
+    if (!Structures || !Structures.features || Structures.features.length === 0) {
+      $("#divstructures").hide();
+    }
+
+    if (!IWRMNodes || !IWRMNodes.features || IWRMNodes.features.length === 0) {
+      $("#divIWRMBasins").hide();
+      $("#divIWRMManningResistance").hide();
+      $("#divIWRMTabulatedRatingCurve").hide();
+      $("#divIWRMFractionalFlow").hide();
+      $("#divIWRMPump").hide();
+      $("#divIWRMLinearResistance").hide();
+      $("#divIWRMLevelBoundary").hide();
+      $("#divIWRMFlowBoundary").hide();
+      $("#divIWRMTerminal").hide();
+    }
+
+    if (!hotspots || !hotspots.features || hotspots.features.length === 0) {
+      $("#divhotspots").hide();
+    }
+
+    if (!measurements || !measurements.locations || measurements.locations.length === 0) {
+      $("#divdifferencewithmeasurements").hide();
+    }
+
+    divdifferencewithmeasurements
+
+
+    StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+    StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+
+    class clsResultsLocation {
+      constructor(ID, lat, lon, ObjectType, description, issecondary = false) {
+        console.log("ObjectType is", ObjectType);
+        this.ID = ID;
+        this.lat = lat;
+        this.lon = lon;
+        this.ObjectType = ObjectType;
+        this.description = description;
+        this.point = L.latLng(lat, lon);
+        let markerHtmlStyles = `background-color: blue; border-radius: 50%; height:100%; width:100%;box-shadow: 5px 2px 4px #888888;`;
+        this.icon = L.divIcon({ iconSize: 10, className: 'my-div-icon', html: `<div style="${markerHtmlStyles}">&nbsp;</div>` });
+        if (ObjectType === 'calculationpoint') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 4, fillColor: "white", stroke: false, color: "transparent", fillOpacity: 1, draggable: false, icon: this.icon });
+        } else if (ObjectType === 'observationpoint') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 4, fillColor: "darkblue", stroke: false, color: "transparent", fillOpacity: 1, draggable: false, icon: this.icon });
+        } else if (ObjectType === 'structure') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 4, fillColor: "green", stroke: true, weight: 10, color: "transparent", fillOpacity: 1, draggable: false, icon: this.icon });
+
+        } else if (ObjectType === 'Basin') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#0000ff", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+          //} else if (ObjectType === 'ManningResistance') {
+          // this.marker = new L.DiamondMarker(this.point, { pane: 'results', radius: 8, fillColor: "#ff0000", weight: 1, color: "black", fillOpacity: 1 });
+        } else if (ObjectType === 'ManningResistance') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#ff0000", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+        } else if (ObjectType === 'TabulatedRatingCurve') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#008000", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+        } else if (ObjectType === 'FractionalFlow') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "green", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+        } else if (ObjectType === 'LinearResistance') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#008000", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+        } else if (ObjectType === 'LevelBoundary') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#008000", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+        } else if (ObjectType === 'FlowBoundary') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#800080", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+        } else if (ObjectType === 'Pump') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#808080", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+        } else if (ObjectType === 'Terminal') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#800080", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+
+        } else if (ObjectType === 'hotspot') {
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 6, fillColor: "purple", stroke: true, weight: 10, color: "transparent", fillOpacity: 1, draggable: false, icon: this.icon });
+        } else if (ObjectType === 'dambreak') {
+          console.log("dambreak ", ID, " is secondary is ", issecondary);
+          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 6, fillColor: issecondary ? "orange" : "#E74C3C", stroke: false, weight: 2, color: issecondary ? "orange" : "#E74C3C", fillOpacity: 1, draggable: false, icon: this.icon });
+        }
+        this.tooltip = '<div class="tooltip">Locatie-ID: ' + ID + "</div>";
+      }
+    }
+
+
+
+    document.querySelector("#timeSlider").max = lastTimestepIdx;
+
+    function switchScenario() {
+      scenarioIdx = document.getElementById("scenarioslist").selectedIndex;
+      updateChart();                        //update the chart, in case it is active
+      redrawSelectedMap(true);
+      BreachLocationPointsAndMarkers = [];
+      if (MeshResults.scenarios.length > 0) { initializeBreachLocationPointAndMarker() };
+      plotBreachLocations();
+      Update1DObjectsStyle(scenarioIdx);    //new!
+    }
+
+    function updateChart() {
+      //this function updates the chart if need be
+      switch (active_chart_source) {
+        case 0:
+          //2D
+          populateTable2D(ActiveID);
+          drawChart2DDepth(ActiveID, getTimestepIndex());
+          break;
+        case 1:
+          populateTable1D(ActiveID, activeObjectType);
+          drawChart1D(ActiveID, activeObjectType, 0);
+          break;
+        case 2:
+          drawDambreakChart(ActiveID, active_dambreak_parameter, getTimestepIndex());
+          break;
+        default:
+      }
+    }
+
+
+    function GetMaxObserved(ModelID, ObjectType) {
+      let myMeas = measurements.locations.find(x => x.ModelID === ModelID);
+      if (myMeas) {
+        if (ObjectType == "calculationpoint" || ObjectType == 'structure' || ObjectType == 'observationpoint') {
+          switch (activeParameter) {
+            case ActiveParameter.WATERLEVEL:
+              if (myMeas.h) {
+                return Math.max(...myMeas.h.values);
+              } else {
+                return undefined;
+              }
+            case ActiveParameter.DISCHARGE:
+              if (myMeas.Q) {
+                return Math.max(...myMeas.Q.values);
+              } else {
+                return undefined;
+              }
+            default:
+              return undefined;
+          }
+        }
+      } else {
+        return undefined;
+      }
+    }
+
+    function GetMeasAliasFromModelID(ModelID) {
+      let myMeas = measurements.locations.find(x => x.ModelID === ModelID);
+      if (myMeas) {
+        return myMeas.Alias;
+      }
+    }
+
+    function GetMeasIDFromModelID(ModelID) {
+      let myMeas = measurements.locations.find(x => x.ModelID === ModelID);
+      if (myMeas) {
+        return myMeas.ID;
+      }
+    }
+
+
+    function GetMaxSimulated(ID, ObjectType, scenarioIdx) {
+
+      if (ObjectType == 'calculationpoint') {
+        let myFeature = CalcpntResults.scenarios[scenarioIdx].features.find(x => x.id === ID);
+        if (myFeature) {
+          return Math.max(...myFeature.waterlevel);
+        }
+      } else if (ObjectType == 'structure') {
+        let myFeature = StructureResults.scenarios[scenarioIdx].features.find(x => x.id === ID);
+        if (myFeature) {
+          return Math.max(...myFeature.discharge);
+        }
+      }
+    }
+
+    function CircleRadiusFromLevelDifference(diff) {
+      let absdiff = Math.abs(diff);
+      if (absdiff >= 1.5) {
+        return 14;
+      } else if (absdiff >= 1) {
+        return 12;
+      } else if (absdiff >= 0.75) {
+        return 10;
+      } else if (absdiff >= 0.5) {
+        return 8;
+      } else if (absdiff >= 0.3) {
+        return 7;
+      } else {
+        return 5;
+      }
+    }
+
+    function redrawSelectedMap(clearPreviousLayers) {
+
+      console.log("current zoomlevel is ", mymap.getZoom());
+
+      if (Settings.show2Dresults) {
+        if (clearPreviousLayers) { tilesLayerGroup.clearLayers() }; //when switching between results type AND plotting 2D, clear the existing tilemaps
+        rebuildLegendItems();       //rebuild the legend, based on the selected parameter
+        switch (selectedMap) {
+          case 0:
+            plotDepths();
+            break;
+          case 1:
+            plotMaxDepth();
+            break;
+          case 2:
+            plotVelocities();
+            break;
+          case 3:
+            plotMaxVelocity();
+            break;
+          case 4:
+            plotTInund();
+            break;
+          case 5:
+            plotT20cm();
+            break;
+          case 6:
+            plotT50cm();
+            break;
+          default:
+            plotDepths();
+            break;
+        }
+      }
+
+    }
+
+    function refreshEntireMap(BG) {
+      plotBackgroundMap(BG, MAPBOX_TOKEN).then(() => {
+        setTimestep(document.querySelector("#timeSlider").value, true);
+        redrawSelectedMap(true);
+      })
+    }
+
+    function getTimestepIndex() {
+      return document.querySelector("#timeSlider").value;
+    }
+
+    function getTimestepIndex2D_vector() {
+      //since the mesh may have timesteps that differ from our 1D timesteps we will derive here the 2D vector timestep index
+      let curtsidx = getTimestepIndex();
+      let curseconds = Settings.timesteps_second[curtsidx];
+
+      //first check if this number of seconds occurs in the 2D timesteps array. if so, return the corresponding index number
+      let mesh2didx = -1;
+      if (MeshResults.scenarios.length > 0) {
+        mesh2didx = MeshResults.scenarios[scenarioIdx].timesteps_second.indexOf(curseconds);
+      }
+      if (mesh2didx >= 0) {
+        return mesh2didx;
+      } else if (MeshResults.scenarios.length > 0) {
+        //no exact match found so walk backwards through our array with timesteps until we find the last timestep before the requested index value
+        for (let i = MeshResults.scenarios[scenarioIdx].timesteps_second.length - 1; i >= 0; i--) {
+          if (MeshResults.scenarios[scenarioIdx].timesteps_second[i] <= curseconds) {
+            return i;   //set the value for this scenario and timestep in our dictionary 
+          }
+        }
+      }
+    }
+
+    function getTimestepIndex2D_tile() {
+      //since the tiles may have been exported on a different interval we will derive here the 2D tile timestep index
+      let curtsidx = getTimestepIndex();
+      let curseconds = Settings.timesteps_second[curtsidx];
+
+      //first check if this number of seconds occurs in the tilemap timesteps array. If so, return the corresponding index number
+      let tile2Didx = Settings.timesteps_tilemap.indexOf(curseconds);
+      if (tile2Didx >= 0) {
+        return tile2Didx;
+      } else {
+        //no exact match found so walk backwards through our array with timesteps until we find the last timestep before the requested index
+        for (let i = Settings.timesteps_tilemap.length - 1; i >= 0; i--) {
+          if (Settings.timesteps_tilemap[i] <= curseconds) {
+            return i;
+          }
+        }
+      }
+    }
+
+    function plotDepths() {
+      if (viewmode == "vectors") {
+        plotDepthVectors(depthGradient);
+      } else {
+        if (MeshResults.scenarios && MeshResults.scenarios.length > 0) {
+          plotDepthTiles(MeshResults.scenarios[scenarioIdx].scenario, maxNativeZoom, getTimestepIndex2D_tile(), opacity);
+        }
+      }
+    }
+
+    function plotMaxDepth() {
+      if (viewmode == "vectors") {
+        plotMaxDepthVectors(depthGradient);
+      } else {
+        if (MeshResults.scenarios && MeshResults.scenarios.length > 0) {
+          plotMaxDepthTiles(MeshResults.scenarios[scenarioIdx].scenario, maxNativeZoom, opacity);
+        }
+      }
+    }
+
+    function plotVelocities() {
+      if (viewmode == "vectors") {
+        plotVelocityVectors();
+      } else {
+        if (MeshResults.scenarios && MeshResults.scenarios.length > 0) {
+          plotVelocityTiles(MeshResults.scenarios[scenarioIdx].scenario, maxNativeZoom, getTimestepIndex2D_tile(), opacity);
+        }
+      }
+    }
+
+
+    function plotMaxVelocity() {
+      if (viewmode == "vectors") {
+        plotMaxVelocityVectors();
+      } else {
+        if (MeshResults.scenarios && MeshResults.scenarios.length > 0) {
+          plotMaxVelocityTiles(MeshResults.scenarios[scenarioIdx].scenario, maxNativeZoom, opacity);
+        }
+      }
+    }
+
+    function plotTInund() {
+      if (viewmode == "vectors") {
+        plotTInundVectors();
+      } else {
+        if (MeshResults.scenarios && MeshResults.scenarios.length > 0) {
+          plotTInundTiles(MeshResults.scenarios[scenarioIdx].scenario, maxNativeZoom, opacity);
+        }
+      }
+    }
+
+    function plotT20cm() {
+      if (viewmode == "vectors") {
+        console.log("plotting time to 20 cm depth not yet supported.")
+      } else {
+        if (MeshResults.scenarios && MeshResults.scenarios.length > 0) {
+          plotT20cmTiles(MeshResults.scenarios[scenarioIdx].scenario, maxNativeZoom, opacity);
+        }
+      }
+    }
+
+    function plotT50cm() {
+      if (viewmode == "vectors") {
+        console.log("plotting time to 20 cm depth not yet supported.")
+      } else {
+        if (MeshResults.scenarios && MeshResults.scenarios.length > 0) {
+          plotT50cmTiles(MeshResults.scenarios[scenarioIdx].scenario, maxNativeZoom, opacity);
+        }
+      }
+    }
+
+    //populate the select item with the available scenario's
+    MeshResults.scenarios.forEach((item) => this.addScenario(item));
+
+    function addScenario(item) {
+      let myscenarios = document.querySelector("#scenarioslist");
+      let option = document.createElement('option');
+      option.setAttribute('value', item.scenario);
+      option.appendChild(document.createTextNode(item.scenario));
+      myscenarios.appendChild(option);
+    }
+
+    function stopFunction() {
+      let tsidx = document.querySelector("#timeSlider").value
+      if (tsidx == lastTimestepIdx) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    let intervalID;
+    let element = document.getElementById('btnplay');
+    let play_icon = document.getElementById('play_icon');
+    element.onclick = function () {
+      play_icon.classList.value = '';   //clear existing classes
+      if (intervalID) {
+        play_icon.classList.add("fas", "fa-play")
+        clearInterval(intervalID);
+        intervalID = null;
+      } else {
+        play_icon.classList.add("fas", "fa-pause")
+        intervalID = setInterval(animateForward, 700);
+      }
+    };
+
+    function animateForward() {
+      document.querySelector("#timeSlider").value = parseInt(document.querySelector("#timeSlider").value) + Settings.animationtimestepinterval;
+      setTimestep(document.querySelector("#timeSlider").value, false); //for some reason the onchange event is not triggered by the line above
+    }
+
+    function stepForward() {
+      document.querySelector("#timeSlider").value = parseInt(document.querySelector("#timeSlider").value) + Settings.animationtimestepinterval;
+      setTimestep(document.querySelector("#timeSlider").value, true); //for some reason the onchange event is not triggered by the line above
+    }
+
+    function fastforward() {
+      document.querySelector("#timeSlider").value = parseInt(document.querySelector("#timeSlider").value) + Settings.animationtimestepinterval * 3;
+      setTimestep(document.querySelector("#timeSlider").value, true); //for some reason the onchange event is not triggered by the line above
+    }
+
+    function rewind() {
+      document.querySelector("#timeSlider").value = parseInt(document.querySelector("#timeSlider").value) - Settings.animationtimestepinterval * 3;
+      setTimestep(document.querySelector("#timeSlider").value, true); //for some reason the onchange event is not triggered by the line above
+    }
+
+    function stepBack() {
+      document.querySelector("#timeSlider").value = parseInt(document.querySelector("#timeSlider").value) - Settings.animationtimestepinterval;
+      setTimestep(document.querySelector("#timeSlider").value, true); //for some reason the onchange event is not triggered by the line above 
+    }
+
+
+    async function setTimestep(tsIdx, clearPreviousLayers) {
+
+      //set the timeslider's title
+      let seconds = Settings.timesteps_second[tsIdx];
+      let DambreakT0Seconds = new Date(Settings.SimulationT0);
+      if (MeshResults.scenarios.length > 0 && MeshResults.scenarios[scenarioIdx]) { DambreakT0Seconds = MeshResults.scenarios[scenarioIdx].DambreakT0Seconds };
+      let T0 = new Date(Settings.SimulationT0)
+      let dagen = Math.floor(seconds / (3600 * 24));
+      let seconds_remaining = seconds % (3600 * 24);
+      let uren = Math.floor(seconds_remaining / 3600);
+      seconds_remaining = seconds % (3600);
+      let minuten = seconds_remaining / 60;
+      document.querySelector("#legendtitle").innerText = "Tijd: " + dagen + "d " + uren + ":" + minuten;
+
+      if (ActiveID) {
+        updateChart();
+      }
+
+      //update the depths or velocities map with the current timestep
+      redrawSelectedMap(clearPreviousLayers);
+
+
+    }
+
+
+
+    // javascript function to collapse the checkbox groups
+    var coll2 = document.getElementsByClassName("collapsiblebutton");
+    var i;
+
+    for (i = 0; i < coll2.length; i++) {
+      coll2[i].addEventListener("click", function () {
+        this.classList.toggle("active");
+        var content = this.parentNode.nextElementSibling;
+        if (content.style.display === "block") {
+          content.style.display = "none";
+        } else {
+          content.style.display = "block";
+        }
+      });
+    }
+
+    let itemsThreshold = 5000;
+    function countItems() {
+      return calculationpoints.locations.length;
+    }
+
+    function setBubble(range, bubble) {
+      const val = range.value;
+      const min = range.min ? range.min : 0;
+      const max = range.max ? range.max : 100;
+      const percentage = 5 + Number(((val - min) * 85) / (max - min));
+      bubble.innerHTML = val;
+
+      // Sorta magic numbers based on size of the native UI thumb
+      bubble.style.left = `calc(${percentage}% + (${8 - percentage * 0.15}px))`;
+    }
+
+    //global variables for this application
+    let zoomlevel = 12;
+    let activeChartModule = Settings.initialChartModule;  //initialize which results to plot in the chart from our external Settings file
+    let mymap = new L.map('mapid', { minZoom: minzoomlevel, maxZoom: maxzoomlevel, zoomControl: false, scrollWheelZoom: true }).setView([52.1, 5.988751316], zoomlevel).on('moveend', () => { /*console.log("Calling redrawselectedmap from moveend");*/ redrawSelectedMap(true) }).on('zoomend', () => { /*console.log("Calling redrawselectedmap from zoomend");*/ redrawSelectedMap(true) });
+    addMapClickHandler();
+
+    //create panes for the layer ordering
+    mymap.createPane('mesh');
+    mymap.createPane('overlays');
+    mymap.createPane('results');
+    // mymap.getPane('mesh').style.zIndex = 650;
+    mymap.getPane('overlays').style.zIndex = 651;
+    mymap.getPane('results').style.zIndex = 652;
+
+    window.L.control.zoom({ position: 'bottomleft' }).addTo(mymap);
+    let myRenderer = L.canvas({ padding: 0.5 });
+    let backgroundLayerGroup = window.L.featureGroup().addTo(mymap);  //this group will only contain the background layer
+    let featureLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain contextual features such as (sub)catchments
+
+    let observationPointsLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain the 1D calculation points results
+    if (Settings.initialChartModule == "1D") {
+      observationPointsLayerGroup.on('click', (e) => {
+        ActiveID = e.properties.ID;
+        drawChart1DForCoordinate(e.properties.ID);
+      });
+    }
+
+    let IWRMNodesLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain the IWRM Nodes
+    if (Settings.initialChartModule == "1D") {
+      IWRMNodesLayerGroup.on('click', (e) => {
+        ActiveID = e.properties.ID;
+        drawChart1DForCoordinate(e.properties.ID);
+      });
+    }
+
+
+
+    let calculationPointsLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain the 1D calculation points results
+    if (Settings.initialChartModule == "1D") {
+      calculationPointsLayerGroup.on('click', (e) => {
+        drawChart1DForCoordinate(e.properties.ID);
+      });
+    }
+
+    let structuresLayerGroup = window.L.featureGroup().addTo(mymap);  //this group will contain the 1D structures results
+    if (Settings.initialChartModule == "1D") {
+      structuresLayerGroup.on('click', (e) => {
+        drawChart1DForCoordinate(e.properties.ID);
+      });
+    }
+
+
+    let meshLayerGroup = window.L.featureGroup().addTo(mymap);          //this group will contain the mesh with water depths
+    let linesLayerGroup = window.L.featureGroup().addTo(mymap);       //this group will only contain line elements such as reaches
+    let markerLayerGroup = window.L.featureGroup().addTo(mymap);      //this group will only contain markers
+    let hotspotsLayerGroup = window.L.featureGroup().addTo(mymap);    //this group will only contain hotspots
+    let breachesLayerGroup = window.L.featureGroup().addTo(mymap);    //this group will only contain breach locations and has to stay on top!
+    let pinLayerGroup = window.L.featureGroup().addTo(mymap);       //this group will only contain the pin that user adds when clicking
+    var imageLayerGroup = L.featureGroup().addTo(mymap);                //this
+    var tilesLayerGroup = L.featureGroup().addTo(mymap);                //this group will contain the tiles
+    let pointsAndMarkers = [];
+    let BreachLocationPointsAndMarkers = [];
+    let selectedMap = 0;     //initialize the 2D results by showing water depth
+    let selected1DResults = 0; //initialize the 1D results by showing waterlevel
+
+    ResultsLocations = [];
+
+    //initilize our map, zoom extent & objects
+    //first we fit to the extent as specified in Settings.js
+    fitMapToExtents(Settings.extent.ll[1], Settings.extent.ll[0], Settings.extent.ur[1], Settings.extent.ur[0]);
+    // fitMapToExtents(Centroids.extent.minLat, Centroids.extent.minLng, Centroids.extent.maxLat, Centroids.extent.maxLng);
+    initializeMap();
+    if (MeshResults.scenarios.length > 0) { initializeBreachLocationPointAndMarker() };
+
+    //rebuild the legend items, based on the map selection
+    rebuildLegendItems();
+
+    //add the breach locations
+    plotBreachLocations();
+
+    plotReaches();
+    plot1DObjects();
+
+    Update1DObjectsStyle(0);
+
+    function removeMapClickHandler() {
+      mymap.off('click');         //remove the 2D event listener from our 2D enviroment
+    }
+
+    function addMapClickHandler() {
+      mymap.on('click', (e) => {
+        active_chart_source = 0;
+        ActiveID = drawChart2DForCoordinate(e.latlng, getTimestepIndex());
+
+        var pinIcon = L.icon({
+          iconUrl: 'css/images/pin.png',
+          //shadowUrl: 'leaf-shadow.png',
+
+          iconSize: [38, 38], // size of the icon
+          //shadowSize:   [50, 64], // size of the shadow
+          iconAnchor: [19, 38], // point of the icon which will correspond to marker's location
+          //shadowAnchor: [4, 62],  // the same for the shadow
+          //popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+        });
+
+
+        //add a marker where we've clicked
+        pinLayerGroup.clearLayers();
+        var marker = L.marker(e.latlng, {
+          icon: pinIcon,
+          // title: 'My Marker',
+          // alt: 'My Marker',
+          // riseOnHover: true,
+          draggable: false
+        }).addTo(pinLayerGroup);
+
+      });
+    }
+
+    function toggleChartResultsModule() {
+      //toggles between 2D mode for chart creation and 1D mode 
+      if (activeChartModule == "2D") {
+        activeChartModule = "1D";
+        mymap.off('click');         //remove the 2D event listener from our 2D enviroment
+        calculationPointsLayerGroup.on('click', (e) => {
+          drawChart1D(e.properties.ID);
+        });
+      } else {
+        activeChartModule = "2D";
+        calculationPointsLayerGroup.off('click'); //remove the 1D event listener from our 1D environment
+        mymap.on('click', (e) => {
+          ActiveID = drawChart2DForCoordinate(e.latlng, getTimestepIndex());
+        });
+      }
+    }
+
+    function rebuildLegendItems() {
+
+      //set the units for the legend
+      let legendIdx;
+      if (selectedMap === 0 || selectedMap === 1) {
+        legendIdx = 0;
+      } else if (selectedMap === 2 || selectedMap === 3) {
+        legendIdx = 1;
+      } else if (selectedMap === 4 || selectedMap === 5 || selectedMap === 6) {
+        legendIdx = 2;
+      } else {
+        legendIdx = 0;
+      }
+
+      //remove all existing children with id 'legenditem'
+      let legendLayerItems = document.getElementById("legendlayeritems");
+      var child = legendLayerItems.lastElementChild;
+      while (child.id === 'legenditem') {
+        legendLayerItems.removeChild(child);
+        child = legendLayerItems.lastElementChild;
+      }
+
+
+      //set the legend unit
+      let legendUnit = document.getElementById("legendlayer");
+      legendUnit.textContent = Legends.legends[legendIdx].title;
+
+      Legends.legends[legendIdx].classes.forEach((element) => {
+        //generate the color classes
+        let legendItem = document.createElement('div');
+        legendItem.id = 'legenditem';
+
+        let legendItemColor = document.createElement('div');
+        legendItemColor.innerHTML = `<div style="background-color: ${element.color}; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;"></div>`;
+
+        let legendItemText = document.createElement('div');
+        legendItemText.textContent = element.title;
+
+        legendItem.appendChild(legendItemColor);
+        legendItem.appendChild(legendItemText);
+        legendLayerItems.appendChild(legendItem);
+
+      })
+
+    }
+
+
+
+    function initializeBreachLocationPointAndMarker() {
+      let dambreaksadded = [];
+      let issecondary = false;
+      for (let scenarioIdx = 0; scenarioIdx < MeshResults.scenarios.length; scenarioIdx++) {
+        let dambreaks = MeshResults.scenarios[scenarioIdx].dambreaks;
+        for (let j = 0; j < dambreaks.length; j++) {
+          let dambreak = dambreaks[j];
+
+          //only add if the dambreak has not yet been added to the map
+          if (dambreaksadded.includes(dambreak.id) == false) {
+
+            //add this dambreak to our array
+            dambreaksadded.push(dambreak.id);
+            issecondary = dambreaksadded.length > 1
+
+            console.log("added ", dambreak.id, " array now length ", dambreaksadded.length);
+
+            let BreachLocationPointAndMarker = new clsResultsLocation(dambreak.id, dambreak.lat, dambreak.lon, "dambreak", "dambreak", issecondary);
+            BreachLocationPointAndMarker.marker.bindTooltip(BreachLocationPointAndMarker.tooltip),
+              BreachLocationPointsAndMarkers.push(BreachLocationPointAndMarker);
+
+            //also add our dambreak line (the path along the dike that is allowed to breach)
+            if (dambreak.path) {
+              let slat, slon, elat, elon;
+              let pointList = [];
+              let pointA, pointB;
+
+              for (let i = 1; i < dambreak.path.length; i++) {
+                slat = dambreak.path[i - 1][0];
+                slon = dambreak.path[i - 1][1];
+                elat = dambreak.path[i][0];
+                elon = dambreak.path[i][1];
+                pointA = new L.LatLng(slat, slon);
+                pointB = new L.LatLng(elat, elon);
+                pointList.push(pointA);
+              }
+              pointList.push(pointB)
+
+              var firstpolyline = new L.Polyline(pointList, {
+                color: 'gray',
+                interactive: false,
+                weight: 3,
+                opacity: 1,
+                smoothFactor: 1
+              });
+              firstpolyline.addTo(mymap);
+            }
+
+            //and finally add the downstream point
+            if (dambreak.downstreamlocation) {
+              L.circleMarker([dambreak.downstreamlocation[0], dambreak.downstreamlocation[1]], {
+                color: issecondary ? 'orange' : '#E74C3C',
+                interactive: false,
+                radius: 5,
+                opacity: 1,
+              }).addTo(mymap);
+            }
+
+          }
+
+
+        }
+      }
+    }
+
+    function plotMarkerOfType(item) {
+      if (item.ObjectType == 'calculationpoint') {
+        item.marker.addTo(calculationPointsLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 2.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 2.5
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 1;
+          active_breach_id = undefined;
+          active_observationpoint_id = undefined;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          ActiveID = item.ID;
+          activeObjectType = item.ObjectType;
+          activeParameter = ActiveParameter.WATERLEVEL;
+          populateTable1D(item.ID, item.ObjectType);
+          drawChart1D(item.ID, item.ObjectType, 0);
+        });
+
+      } else if (item.ObjectType == 'observationpoint') {
+        item.marker.addTo(observationPointsLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 2.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 2.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 1;
+          active_breach_id = undefined;
+          active_observationpoint_id = item.ID;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          ActiveID = item.ID;
+          activeObjectType = item.ObjectType;
+          activeParameter = ActiveParameter.WATERLEVEL;
+          populateTable1D(item.ID, item.ObjectType);
+
+          if (active_observationpoint_parameter == 'observationpoint_waterlevel') {
+            drawChart1D(item.ID, item.ObjectType, 0);
+          } else if (active_observationpoint_parameter == 'observationpoint_discharge') {
+            drawChart1D(item.ID, item.ObjectType, 1);
+          } else if (active_observationpoint_parameter == 'observationpoint_cumulative_discharge') {
+            drawChart1D(item.ID, item.ObjectType, 2);
+          }
+
+        });
+      } else if (item.ObjectType == 'structure') {
+        item.marker.addTo(structuresLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 1;
+          active_breach_id = undefined;
+          active_observationpoint_id = undefined;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          ActiveID = item.ID;
+          activeObjectType = item.ObjectType;
+          activeParameter = ActiveParameter.WATERLEVEL;
+          populateTable1D(item.ID, item.ObjectType);
+          drawChart1D(item.ID, item.ObjectType, 0);
+        });
+
+      } else if (item.ObjectType == 'Basin') {
+        console.log("drawing IWRM basin");
+        item.marker.addTo(IWRMNodesLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 1;
+          active_breach_id = undefined;
+          active_observationpoint_id = undefined;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          ActiveID = item.ID;
+          activeObjectType = item.ObjectType;
+          activeParameter = ActiveParameter.WATERLEVEL;
+          populateTable1D(item.ID, item.ObjectType);
+          drawChart1D(item.ID, item.ObjectType, 0);
+        });
+
+      } else if (item.ObjectType == 'ManningResistance') {
+        console.log("drawing IWRM ManningResistance");
+        item.marker.addTo(IWRMNodesLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 1;
+          active_breach_id = undefined;
+          active_observationpoint_id = undefined;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          ActiveID = item.ID;
+          activeObjectType = item.ObjectType;
+          activeParameter = ActiveParameter.WATERLEVEL;
+          populateTable1D(item.ID, item.ObjectType);
+          drawChart1D(item.ID, item.ObjectType, 0);
+        });
+
+      } else if (item.ObjectType == 'TabulatedRatingCurve') {
+        console.log("drawing IWRM TabulatedRatingCurve");
+        item.marker.addTo(IWRMNodesLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 1;
+          active_breach_id = undefined;
+          active_observationpoint_id = undefined;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          ActiveID = item.ID;
+          activeObjectType = item.ObjectType;
+          activeParameter = ActiveParameter.WATERLEVEL;
+          populateTable1D(item.ID, item.ObjectType);
+          drawChart1D(item.ID, item.ObjectType, 0);
+        });
+
+      } else if (item.ObjectType == 'FractionalFlow') {
+        console.log("drawing IWRM FractionalFlow");
+        item.marker.addTo(IWRMNodesLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 1;
+          active_breach_id = undefined;
+          active_observationpoint_id = undefined;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          ActiveID = item.ID;
+          activeObjectType = item.ObjectType;
+          activeParameter = ActiveParameter.WATERLEVEL;
+          populateTable1D(item.ID, item.ObjectType);
+          drawChart1D(item.ID, item.ObjectType, 0);
+        });
+
+      } else if (item.ObjectType == 'Pump') {
+        console.log("drawing IWRM Pump");
+        item.marker.addTo(IWRMNodesLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 1;
+          active_breach_id = undefined;
+          active_observationpoint_id = undefined;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          ActiveID = item.ID;
+          activeObjectType = item.ObjectType;
+          activeParameter = ActiveParameter.WATERLEVEL;
+          populateTable1D(item.ID, item.ObjectType);
+          drawChart1D(item.ID, item.ObjectType, 0);
+        });
+
+      } else if (item.ObjectType == 'LinearResistance') {
+        console.log("drawing IWRM LinearResistance");
+        item.marker.addTo(IWRMNodesLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 1;
+          active_breach_id = undefined;
+          active_observationpoint_id = undefined;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          ActiveID = item.ID;
+          activeObjectType = item.ObjectType;
+          activeParameter = ActiveParameter.WATERLEVEL;
+          populateTable1D(item.ID, item.ObjectType);
+          drawChart1D(item.ID, item.ObjectType, 0);
+        });
+
+      } else if (item.ObjectType == 'LevelBoundary') {
+        console.log("drawing IWRM LevelBoundary");
+        item.marker.addTo(IWRMNodesLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 1;
+          active_breach_id = undefined;
+          active_observationpoint_id = undefined;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          ActiveID = item.ID;
+          activeObjectType = item.ObjectType;
+          activeParameter = ActiveParameter.WATERLEVEL;
+          populateTable1D(item.ID, item.ObjectType);
+          drawChart1D(item.ID, item.ObjectType, 0);
+        });
+
+      } else if (item.ObjectType == 'FlowBoundary') {
+        console.log("drawing IWRM FlowBoundary");
+        item.marker.addTo(IWRMNodesLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 1;
+          active_breach_id = undefined;
+          active_observationpoint_id = undefined;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          ActiveID = item.ID;
+          activeObjectType = item.ObjectType;
+          activeParameter = ActiveParameter.WATERLEVEL;
+          populateTable1D(item.ID, item.ObjectType);
+          drawChart1D(item.ID, item.ObjectType, 0);
+        });
+
+      } else if (item.ObjectType == 'Terminal') {
+        console.log("drawing IWRM Terminal");
+        item.marker.addTo(IWRMNodesLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 1;
+          active_breach_id = undefined;
+          active_observationpoint_id = undefined;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          ActiveID = item.ID;
+          activeObjectType = item.ObjectType;
+          activeParameter = ActiveParameter.WATERLEVEL;
+          populateTable1D(item.ID, item.ObjectType);
+          drawChart1D(item.ID, item.ObjectType, 0);
+        });
+
+      } else if (item.ObjectType == '2DCell') {
+        item.marker.addTo(markerLayerGroup);
+
+      } else if (item.ObjectType == 'dambreak') {
+        item.marker.addTo(breachesLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          removeMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius * 2.5;
+          item.marker.setStyle({ radius: radius });
+        })
+        item.marker.on('mouseout', (e) => {
+          addMapClickHandler();
+          let radius = item.marker.options.radius;
+          radius = radius / 2.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('click', (e) => {
+          active_chart_source = 2;
+          active_breach_id = item.ID;
+          active_observationpoint_id = undefined;
+          ActiveID = item.ID;
+          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          drawDambreakChart(item.ID, active_dambreak_parameter, getTimestepIndex());
+        });
+
+      } else if (item.ObjectType == 'hotspot') {
+        item.marker.addTo(hotspotsLayerGroup);
+        item.marker.on('mouseover', (e) => {
+          let radius = item.marker.options.radius;
+          radius = radius * 1.5;
+          item.marker.setStyle({ radius: radius });
+        });
+        item.marker.on('mouseout', (e) => {
+          let radius = item.marker.options.radius;
+          radius = radius / 1.5
+          item.marker.setStyle({ radius: radius });
+        });
+      } else {
+        console.log("Object type not recognized: ", item.ObjectType);
+      }
+    }
+
+    function plotBreachLocations(item) {
+      breachesLayerGroup.clearLayers();
+      BreachLocationPointsAndMarkers.forEach(item => { plotMarkerOfType(item, "dambreak"); });
+    }
+
+
+    function getTimestep() {
+      return document.querySelector("#timeSlider").value;
+    }
+
+
+    function plotReaches() {
+      //remove all existing layers from our layergroup
+      featureLayerGroup.clearLayers();
+
+      if (Reaches && ("features" in Reaches)) {
+        //if checked, add the background reaches
+        if (document.getElementById("reaches").checked) {
+          L.geoJson(Reaches, {
+            pane: 'overlays',
+            style: {
+              interactive: false,
+              color: "rgb(245, 113, 234)",
+              weight: 2,
+              pane: 'overlays'
+            }
+          }).addTo(featureLayerGroup);
+        };
+      }
+
+    }
+
+    function initializeObservationpoints() {
+      if (Observationpoints && "features" in Observationpoints) {
+        //this function populates the array with all point objects and assigns a marker to each of them
+        let points = Observationpoints;             //reads the locations from our data.js file
+        points.features.forEach((item) => { initializeResultsLocation(item, "observationpoint") });
+      }
+    }
+
+    function initializeIWRMNodes(targetNodeType) {
+      if (IWRMNodes && "features" in IWRMNodes) {
+        // This function populates the array with all point objects and assigns a marker to each of them
+        let points = IWRMNodes; // Reads the locations from our data.js file
+        points.features.forEach((item) => {
+          if (item.properties.NodeType === targetNodeType) {
+            initializeResultsLocation(item, targetNodeType);
+          }
+        });
+      }
+    }
+
+    function initializeCalculationpoints() {
+      if (Calculationpoints && "features" in Calculationpoints) {
+        //this function populates the array with all point objects and assigns a marker to each of them
+        let points = Calculationpoints;             //reads the locations from our data.js file
+        points.features.forEach((item) => { initializeResultsLocation(item, "calculationpoint") });
+      }
+    }
+
+    function initializeStructures() {
+      if (Structures && "features" in Structures) {
+        //this function populates the array with all point objects and assigns a marker to each of them
+        let points = Structures;             //reads the locations from our data.js file
+        points.features.forEach((item) => { initializeResultsLocation(item, "structure") });
+      }
+    }
+
+    function initializeHotspots() {
+      let points = hotspots;
+      points.features.forEach((item) => { initializeResultsLocation(item, "hotspot") });
+    }
+
+    function initializeResultsLocation(item, ObjectType, index) {
+      console.log("ObjectType initialization for ", ObjectType);
+      let ResultsLocation = new clsResultsLocation(item.properties.ID, item.geometry.coordinates[1], item.geometry.coordinates[0], ObjectType, item.properties.description);
+      ResultsLocation.marker.bindTooltip(ResultsLocation.tooltip);
+      ResultsLocations.push(ResultsLocation);
+    }
+
+    function plot1DObjects() {
+
+      //initialize by clearing all existing layers and the array with results locations
+      hotspotsLayerGroup.clearLayers();
+      calculationPointsLayerGroup.clearLayers();
+      observationPointsLayerGroup.clearLayers();
+      IWRMNodesLayerGroup.clearLayers();
+      structuresLayerGroup.clearLayers();
+      ResultsLocations = [];
+
+      // observationPointsLayerGroup.bringToFront();
+
+      if (document.getElementById("observationpoints").checked) { initializeObservationpoints(); }
+      if (document.getElementById("calculationpoints").checked) { initializeCalculationpoints(); }
+      if (document.getElementById("structures").checked) { initializeStructures(); }
+      if (document.getElementById("hotspots").checked) { initializeHotspots(); }
+
+      if (document.getElementById("IWRMBasins").checked) { initializeIWRMNodes("Basin"); }
+      if (document.getElementById("IWRMManningResistance").checked) { initializeIWRMNodes("ManningResistance"); }
+      if (document.getElementById("IWRMTabulatedRatingCurve").checked) { initializeIWRMNodes("TabulatedRatingCurve"); }
+      if (document.getElementById("IWRMFractionalFlow").checked) { initializeIWRMNodes("FractionalFlow"); }
+      if (document.getElementById("IWRMPump").checked) { initializeIWRMNodes("Pump"); }
+      if (document.getElementById("IWRMLinearResistance").checked) { initializeIWRMNodes("LinearResistance"); }
+      if (document.getElementById("IWRMLevelBoundary").checked) { initializeIWRMNodes("LevelBoundary"); }
+      if (document.getElementById("IWRMFlowBoundary").checked) { initializeIWRMNodes("FlowBoundary"); }
+      if (document.getElementById("IWRMTerminal").checked) { initializeIWRMNodes("Terminal"); }
+
+      ResultsLocations.forEach(item => plotMarkerOfType(item));
+      Update1DObjectsStyle(0);
+    }
+
+    function Update1DObjectsStyle(scenarioIdx) {
+      //this function updates the styling of calculation points. For now we only plot the difference beween calculated and observed
+      ResultsLocations.forEach(item => {
+
+        //depending on the ObjectType will we retrieve data to show in the tooltip
+        if (item.ObjectType === 'hotspot') {
+          let tooltip = '<div class="tooltip">Hotspot ID: ' + item.ID + "<br>Omschrijving: " + item.description + "</div>";
+          item.marker.bindTooltip(tooltip);
+        } else {
+          //get the Alias and ID for the corresponding measurement location 
+          let Alias = GetMeasAliasFromModelID(item.ID);
+          let ID = GetMeasIDFromModelID(item.ID);
+
+          const maxSimulated = GetMaxSimulated(item.ID, item.ObjectType, scenarioIdx);
+          const maxObserved = GetMaxObserved(item.ID, item.ObjectType);
+
+          let hdiff;
+          if (maxSimulated === undefined || maxObserved === undefined) {
+            hdiff = undefined; // or null, or a specific constant value
+          } else {
+            hdiff = maxSimulated - maxObserved;
+          }
+
+          //let hdiff = GetMaxSimulated(item.ID, item.ObjectType, scenarioIdx) - GetMaxObserved(item.ID, item.ObjectType);
+
+          if (selected1DResults === 0) {
+            //plot waterlevel
+            //NOT WORKING YET!!!!
+            // item.marker.setStyle({ radius: 7 });
+          } else if (selected1DResults === 1) {
+            //plot difference between computed and observed maximum
+            item.marker.setStyle({ radius: CircleRadiusFromLevelDifference(hdiff) });
+          }
+
+          if (Alias && ID) {
+            let tooltip = '<div class="tooltip">Meetlocatie: ' + ID + '<br>Alias: ' + Alias + '<br>Knoop-ID: ' + item.ID + "<br>" + "Maximum - meetwaarde: " + RoundNumber(hdiff, 2) + "</div>";
+            item.marker.bindTooltip(tooltip);
+          } else {
+            let tooltip = '<div class="tooltip">Locatie-ID: ' + item.ID + "<br>" + "Maximum - meetwaarde: " + RoundNumber(hdiff, 2) + "</div>";
+            item.marker.bindTooltip(tooltip);
+          }
+        }
+      })
+    }
+
+
+
+    function styleLines(feature) {
+      if (feature.properties && feature.properties.verdict) {
+        return {
+          color: getDepthColor(feature.properties.verdict, depthGradient),
+          weight: 3,
+        }
+      } else {
+        return {
+          color: "darkblue",
+          weight: 3,
+        }
+      }
+    }
+
+    function onEachFeature(feature, layer) {
+      if (feature.properties && feature.properties.comment) {
+        //layer.bindPopup(feature.properties.comment);
+        layer.bindTooltip(feature.properties.comment);
+      }
+    }
+
+    function toggleChart() {
+      var mychart = document.getElementById("mychart");
+      if (mychart.style.display === "none") {
+        mychart.style.display = "block";
+      } else {
+        mychart.style.display = "none";
+      }
+    }
+
+    function toggleXAxis() {
+      //toggles between the modi where the chart's x axis is expressed in hours w.r.t. breach (relative) or in date/time
+      xaxisrelative = !xaxisrelative;
+      console.log("xaxisrelative is now ", xaxisrelative);
+      updateChart();
+    }
+
+    function toggleDambreakParameter(parameter_name) {
+      //this function sets the active dambreak parameter so the corresponding parameter is plotted in the chart
+      active_dambreak_parameter = parameter_name;
+      StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+
+      //if a dambreach id has already been selected before toggling, redraw the chart
+      if (active_breach_id) {
+        drawDambreakChart(active_breach_id, active_dambreak_parameter, getTimestepIndex());
+      }
+    }
+
+    function toggleObservationpointsParameter(parameter_name) {
+      //this function sets the active dambreak parameter so the corresponding parameter is plotted in the chart
+      active_observationpoint_parameter = parameter_name;
+      StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+
+      if (active_observationpoint_parameter == 'observationpoint_waterlevel') {
+        drawChart1D(active_observationpoint_id, "observationpoint", 0)
+      } else if (active_observationpoint_parameter == 'observationpoint_discharge') {
+        drawChart1D(active_observationpoint_id, "observationpoint", 1)
+      } else if (active_observationpoint_parameter == 'observationpoint_cumulative_discharge') {
+        drawChart1D(active_observationpoint_id, "observationpoint", 2)
+      }
+
+    }
+
+    function changeTransparency() {
+      var myslider = document.getElementById("transparency");
+      var myval = myslider.value;
+      opacity = (100 - myval) / 100;            //transform transparency into opacity   
+      redrawSelectedMap(true);                    //executa a redraw of our selected parameter
+    }
+
+    function toggleSlider() {
+      var myslider = document.getElementById("timesliderpanel");
+      if (myslider.style.display === "none") {
+        myslider.style.display = "block";
+      } else {
+        myslider.style.display = "none";
+      }
+    }
+
+    function plotLines() {
+      if (document.getElementById("watergangen").checked) {
+        L.geoJson(reaches, {
+          onEachFeature: onEachFeature,
+          style: styleLines,
+        }).addTo(linesLayerGroup);
+      } else {
+        linesLayerGroup.clearLayers();
+      };
+    }
+
+    function getExceedanceData(ID) {
+      let record = "dummy" // exceedancedata.locations.find(c => c.ID === ID);
+      return record;
+    }
+
+    function getValidationResult(ID) {
+      let record = locations.locations.find(c => c.ID === ID);
+      return record;
+    }
+
+
+    function makeLine(value) {
+      let json = [
+        { "x": 0.1, "y": value }, { "x": 1000, "y": value }
+      ]
+      return json;
+    }
+
+
+    function removeData(chart) {
+      chart.data.labels.pop();
+      chart.data.datasets.forEach((dataset) => {
+        dataset.data.pop();
+      });
+      chart.update();
+    }
+
+    let elevations = [];
+    let elevationPercentiles = [];
+    function addElevation(item, index) {
+      elevations.push(item[2]);
+    }
+
+    function calcAddResult(item, index) {
+      let result = percentile(elevations, item)
+      elevationPercentiles.push(result);
+    }
+
+    /* When the user clicks on the button,toggle between hiding and showing the dropdown content */
+    function myFunction() {
+      document.getElementById("myDropdown").classList.toggle("show");
+    }
+
+    // Close the dropdown menu if the user clicks outside of it
+    window.onclick = function (event) {
+      if (!event.target.matches('.dropbtn')) {
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        var i;
+        for (i = 0; i < dropdowns.length; i++) {
+          var openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+          }
+        }
+      }
+    }
+
+    function GetSelectedTextValueAndStyleMarkers(ddlHerhalingstijd) {
+      let selectedText = ddlHerhalingstijd.options[ddlHerhalingstijd.selectedIndex].innerHTML;
+      setMarkersWaterDepthStyle(144);
+      return selectedText;
+    }
+
+  </script>
+
+
+</body>
+
+</html>
