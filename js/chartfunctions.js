@@ -135,6 +135,21 @@ function populateTable1D(ModelID, objectType) {
           ObsValues = myMeas.C.values;
         }
         break;
+      case 'Basin':
+        nScenarios = IWRMNodeResults.scenarios.length;
+        console.log("nScenarios is now ", nScenarios);
+        cell = row.insertCell(1);
+        cell.innerHTML = "H.max.sim.";
+        cell = row.insertCell(2);
+        cell.innerHTML = "H.max.obs.";
+        cell = row.insertCell(3);
+        cell.innerHTML = "H.max.diff.";
+        if (myMeas) {
+          ObsMax = Math.max(...myMeas.h.values);
+          ObsDates = myMeas.h.dates;
+          ObsValues = myMeas.h.values;
+        }
+        break;
       default:
       // code block
     }
@@ -263,6 +278,36 @@ function populateTable1D(ModelID, objectType) {
             }
           }
         }
+      case 'Basin':
+
+        for (let scenarioIdx = 0; scenarioIdx < IWRMNodeResults.scenarios.length; scenarioIdx++) {
+
+          let myFeature;
+          let simSeries;  //the simulated timeseries
+          let scenario;   //the simulated scenario
+
+          scenario = IWRMNodeResults.scenarios[scenarioIdx];
+          myFeature = scenario.features.find(x => x.id === ModelID);
+          if (myFeature) {
+            SimMax = Math.max(...myFeature.level);
+            simSeries = myFeature.level;
+          }
+
+          if (myFeature) {
+            row = table.insertRow(1);
+            cell = row.insertCell(0);
+            cell.innerHTML = scenario.scenario;
+            cell = row.insertCell(1);
+            cell.innerHTML = RoundNumber(SimMax, 2);
+            cell = row.insertCell(2);
+            cell.innerHTML = RoundNumber(ObsMax, 2);
+            cell = row.insertCell(3);
+            if (myMeas) {
+              cell.innerHTML = RoundNumber(SimMax - ObsMax, 2);
+            }
+          }
+        }
+        break;
       default:
     }
   }
@@ -271,6 +316,9 @@ function populateTable1D(ModelID, objectType) {
 function drawChart1D(ModelID, objectType, parameterIdx) {
   //this function draws the chart for 1D objects
   if (ModelID) {
+
+    console.log("Drawing chart for ", ModelID, ": type ", objectType);
+
     switch (objectType) {
       case 'observationpoint':
         drawObservationpointChart(ModelID, parameterIdx, getTimestepIndex());
@@ -285,6 +333,9 @@ function drawChart1D(ModelID, objectType, parameterIdx) {
       case 'wqpoint':
         drawChart1DObject(ModelID, objectType, parameterIdx)
         break;
+      case 'Basin':
+        drawChart1DObject(ModelID, objectType, parameterIdx)
+        break;
       default:
         break;
     }
@@ -294,6 +345,8 @@ function drawChart1D(ModelID, objectType, parameterIdx) {
 
 function drawChart1DObject(ModelID, objectType, parameterIdx) {
   if (ModelID) {
+
+    console.log("in function drawChart1DObject");
 
     //prepare a Google datatable for our chart
     let data = new google.visualization.DataTable();
@@ -367,6 +420,19 @@ function drawChart1DObject(ModelID, objectType, parameterIdx) {
           ObsMax = Math.max(...myMeas.C.values);
           ObsDates = myMeas.C.dates;
           ObsValues = myMeas.C.values;
+        }
+        break;
+      case 'Basin':
+        titleLeader = "Waterlevel ";
+        vAxisTitle = "Waterlevel (m AD)"
+        nScenarios = IWRMNodeResults.scenarios.length;
+        for (let scenarioIdx = 0; scenarioIdx < IWRMNodeResults.scenarios.length; scenarioIdx++) {
+          data.addColumn('number', IWRMNodeResults.scenarios[scenarioIdx].scenario);
+        }
+        if (myMeas) {
+          ObsMax = Math.max(...myMeas.Q.values);
+          ObsDates = myMeas.Q.dates;
+          ObsValues = myMeas.Q.values;
         }
         break;
       default:
@@ -522,7 +588,6 @@ function drawChart1DObject(ModelID, objectType, parameterIdx) {
           }
         }
         break;
-
       case 'wqpoint':
         for (let scenarioIdx = 0; scenarioIdx < WQResults.scenarios.length; scenarioIdx++) {
 
@@ -565,6 +630,67 @@ function drawChart1DObject(ModelID, objectType, parameterIdx) {
         }
         break;
 
+      case 'Basin':
+        for (let scenarioIdx = 0; scenarioIdx < IWRMNodeResults.scenarios.length; scenarioIdx++) {
+
+          let startDate;
+          let myFeature;
+          let simSeries;  //the simulated timeseries
+          let scenario;   //the simulated scenario
+          let ts;
+
+          scenario = IWRMNodeResults.scenarios[scenarioIdx];
+          myFeature = scenario.features.find(x => x.id == ModelID);
+
+          ts = scenario.timesteps_second;
+
+          startDate = new Date(Settings.SimulationT0);
+          if (myFeature) {
+            SimMax = Math.max(...myFeature.storage);
+            simSeries = myFeature.storage;
+          }
+
+          let year = startDate.getFullYear();
+          let month = startDate.getMonth();
+          let day = startDate.getDate();
+          let hour = startDate.getHours();
+          let minute = startDate.getMinutes();
+          let second = startDate.getSeconds();
+
+          if (myFeature) {
+            //walk through all timesteps, calculate the date and add its date + value to our dictionary            
+            for (let i = 0; i < Settings.timesteps_second.length; i++) {
+              let curDate = new Date(year, month, day, hour, minute, second + Settings.timesteps_second[i]);
+
+              //check if this date is already existing as a key in our dictionary. If not, add it
+              let curDateStr = curDate.toISOString().substring(0, 19)                      //convert our date to the ISO 8601 format, only keep YYYY-MM-DDTHH:mm:ss
+              if (!(curDateStr in dates)) {
+                dates[curDateStr] = {};
+              }
+
+              //now check if this timestep also occurs in our results arrays
+              //if so, set its value. If not, estimate the result
+              let index = ts.indexOf(Settings.timesteps_second[i]);
+              if (index >= 0) {
+                dates[curDateStr][scenarioIdx + 1] = simSeries[index];   //set the value for this scenario and timestep in our dictionary
+              } else {
+                // dates[curDateStr][scenarioIdx + 1] = NaN;   //set the value for this scenario and timestep in our dictionary
+                //no exact match found so walk backwards through our array with timesteps until we find the last timestep before the requested index value
+                for (let j = ts.length - 1; j >= 0; j--) {
+                  if (ts[j] <= Settings.timesteps_second[i]) {
+                    dates[curDateStr][scenarioIdx + 1] = simSeries[j];   //set the value for this scenario and timestep in our dictionary
+                    break;
+                  }
+                }
+              }
+
+            }
+          }
+        }
+        break;
+
+
+
       default:
     }
 
@@ -582,22 +708,15 @@ function drawChart1DObject(ModelID, objectType, parameterIdx) {
 
     data.addRows(Object.keys(dates).length);
 
-    // console.log("added rows is ", Object.keys(dates).length);
-
     let i = 0;
     Object.keys(dates).forEach(key => {
-      // console.log("adding key", key);
-      // console.log("adding obs data", dates[key][0]);
       data.setValue(i, 0, new Date(key));     //datum
       data.setValue(i, 1, dates[key][0]);     //meetwaarde
-      // console.log("scenarios is ", nScenarios);
       for (let j = 0; j < nScenarios; j++) {
         data.setValue(i, j + 2, dates[key][j + 1]);     //scenario
       }
       i++;
     });
-
-    // console.log("SimMax is ", SimMax);
 
     // Set chart options
     var options = {
@@ -652,7 +771,6 @@ function drawChart1DObject(ModelID, objectType, parameterIdx) {
     // Instantiate and draw our chart, passing in some options.
     var chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
     chart.draw(data, options);
-
 
 
 
@@ -750,16 +868,16 @@ function getDambreakIndexByID(scenarioIndex, dambreakID) {
   const scenarioData = MeshResults.scenarios[scenarioIndex];
 
   // Check if scenario data exists
-  if(!scenarioData) {
-      throw new Error("Invalid scenario index.");
+  if (!scenarioData) {
+    throw new Error("Invalid scenario index.");
   }
 
   // Loop through the dambreaks in the scenario
-  for(let i = 0; i < scenarioData.dambreaks.length; i++) {
-      // If the dambreak ID matches, return the index
-      if(scenarioData.dambreaks[i].id === dambreakID) {
-          return i;
-      }
+  for (let i = 0; i < scenarioData.dambreaks.length; i++) {
+    // If the dambreak ID matches, return the index
+    if (scenarioData.dambreaks[i].id === dambreakID) {
+      return i;
+    }
   }
 
   // If no dambreak with the given ID was found in the scenario, return -1
@@ -814,9 +932,9 @@ function drawDambreakChart(ID, active_dambreak_parameter, tsidx) {
     let seriesIdx = -1
     let dambreakIdx = -1
     for (let myScenarioIdx = 0; myScenarioIdx < MeshResults.scenarios.length; myScenarioIdx++) {
-    
+
       dambreakIdx = getDambreakIndexByID(myScenarioIdx, ID);
-      if (dambreakIdx >=0){
+      if (dambreakIdx >= 0) {
         if (active_dambreak_parameter == 'dambreak_levels') {
           //only plot the currently active scenario because otherwise we have too many lines!
           if (myScenarioIdx == scenarioIdx) {
@@ -849,7 +967,7 @@ function drawDambreakChart(ID, active_dambreak_parameter, tsidx) {
         } else if (active_dambreak_parameter == 'dambreak_growth') {
           seriesIdx = addDateTimeSeries(MeshResults.scenarios[myScenarioIdx].scenario, "groei", header, dates, MeshResults.scenarios[myScenarioIdx].dambreaks[dambreakIdx].timesteps_second, MeshResults.scenarios[myScenarioIdx].dambreaks[dambreakIdx].dambreak_growth, seriesIdx);
           nSeries++;
-        }  
+        }
       }
 
     }
@@ -885,7 +1003,7 @@ function drawDambreakChart(ID, active_dambreak_parameter, tsidx) {
             values.push(null);
           }
 
-		  //if (dambreaktsidx >= 0 && i == dambreaktsidx) {
+          //if (dambreaktsidx >= 0 && i == dambreaktsidx) {
           //  values.push("bres")
           //} else {
           //  values.push(null);
@@ -913,7 +1031,7 @@ function drawDambreakChart(ID, active_dambreak_parameter, tsidx) {
           values.push(null);
         }
 
-		//if (dambreaktsidx >= 0 && i == dambreaktsidx) {
+        //if (dambreaktsidx >= 0 && i == dambreaktsidx) {
         //  values.push("bres")
         //} else {
         //  values.push(null);
@@ -1664,16 +1782,16 @@ function addDateTimeSeries(scenarioName, parameter, header, dates, timesteps_sec
       if (cumulative) {
         for (let j = timesteps_second.length - 1; j >= 0; j--) {
           if (timesteps_second[j] <= Settings.timesteps_second[tsidx]) {
-              //we will multiply the discharge from the previous timestep with the timestep size and add that to our cumulative
-              //however this can only be done if the timestep index found in our series is also > 0
-              if (j > 0) {
-                dates[curDateStr][seriesIdx + 1] = lastval + multiplier * (Settings.timesteps_second[tsidx] - Settings.timesteps_second[tsidx - 1]) * values[j];   //set the value for this scenario and timestep in our dictionary
-                lastval = dates[curDateStr][seriesIdx + 1];
-              } else {
-                //apparently the index number found in our timeseries does not exceed 0 so we'll have to stick with 0 for our cumulative
-                dates[curDateStr][seriesIdx + 1] = 0;   //set the value for this scenario and timestep in our dictionary      
-                lastval = dates[curDateStr][seriesIdx + 1];
-              }
+            //we will multiply the discharge from the previous timestep with the timestep size and add that to our cumulative
+            //however this can only be done if the timestep index found in our series is also > 0
+            if (j > 0) {
+              dates[curDateStr][seriesIdx + 1] = lastval + multiplier * (Settings.timesteps_second[tsidx] - Settings.timesteps_second[tsidx - 1]) * values[j];   //set the value for this scenario and timestep in our dictionary
+              lastval = dates[curDateStr][seriesIdx + 1];
+            } else {
+              //apparently the index number found in our timeseries does not exceed 0 so we'll have to stick with 0 for our cumulative
+              dates[curDateStr][seriesIdx + 1] = 0;   //set the value for this scenario and timestep in our dictionary      
+              lastval = dates[curDateStr][seriesIdx + 1];
+            }
             break;
           }
         }

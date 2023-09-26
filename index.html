@@ -20,6 +20,7 @@
   <script type="text/javascript" src="js/Reaches.js"></script>
   <script type="text/javascript" src="js/Observationpoints.js"></script>
   <script type="text/javascript" src="js/IWRMNodes.js"></script>
+  <script type="text/javascript" src="js/IWRMNodeResults.js"></script>
   <script type="text/javascript" src="js/Observationpointresults.js"></script>
   <script type="text/javascript" src="js/Calculationpoints.js"></script>
   <script type="text/javascript" src="js/CalcpntResults.js"></script>
@@ -1146,6 +1147,9 @@
     }
 
     function plotMarkerOfType(item) {
+
+      console.log("plotting marker of type ", item.ObjectType);
+
       if (item.ObjectType == 'calculationpoint') {
         item.marker.addTo(calculationPointsLayerGroup);
         item.marker.on('mouseover', (e) => {
@@ -1250,6 +1254,7 @@
           item.marker.setStyle({ radius: radius });
         });
         item.marker.on('click', (e) => {
+          console.log("Basin clicked");
           active_chart_source = 1;
           active_breach_id = undefined;
           active_observationpoint_id = undefined;
@@ -1257,7 +1262,7 @@
           StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
           ActiveID = item.ID;
           activeObjectType = item.ObjectType;
-          activeParameter = ActiveParameter.WATERLEVEL;
+          activeParameter = ActiveParameter.level;
           populateTable1D(item.ID, item.ObjectType);
           drawChart1D(item.ID, item.ObjectType, 0);
         });
