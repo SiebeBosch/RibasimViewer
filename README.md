@@ -1,7 +1,9 @@
 # RibasimViewer
-A universal webviewer for Deltares' Ribasim projects.
+A universal webviewer for Deltares' RIBASIM projects.
 The webviewer consists solely of HTML, Javascript and CSS, thus making it extremely lightweight and portable. A webserver is NOT necessary.
-Launching the application is a matter of double-clicking index.html.
+Launching the application is simply a matter of double-clicking index.html.
+
+The viewer can be populated with a RIBASIM model topology and simulation results by using the Community Edition of Hydroconsult's HydroToolbox software (first release expected in October 2023).
 
 ![Alt text](./images/example.png)
 
@@ -10,12 +12,20 @@ A token for Mapbox is required in order to plot the background map. This token s
 
 let MAPBOX_TOKEN = 'your_mapbox_token';
 
-Request your own token at https://docs.mapbox.com/help/getting-started/access-tokens/
+Request your own token at https://docs.mapbox.com/help/getting-started/access-tokens/.
+In case the application is populated and launched from within the community edition of HydroToolbox (Hydroconsult) the required token is included.
+
+## Populating the viewer
+Populating the viewer with the topology and results of your RIBASIM-project can be done with the Community Edition of HydroToolbox software (Hydroconsult, The Netherlands). 
+This application is currently in development but the first release with support for RIBASIM may be expected by october 2023.
+
+## Launching the viewer
+Launching the viewer is simply a matter of double-clicking the index.html file. The application will open in your default internet-browser.
 
 ## Architecture
 All RIBASIM-data, both the topology and the timeseries, is stored in the JS-folder in javascript-files. 
-Inside each of these files a javascript-variable is defined and a JSON object is assigned to the variable.
-This approach makes it possible to import JSON data directly from the folder into the viewer.
+Inside each of these files a javascript-variable is defined and assigned a JSON object.
+This approach makes it possible to import JSON data directly from a local directory.
 
 For example reaches.js could look like this:
 
