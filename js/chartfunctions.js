@@ -1,61 +1,3 @@
-function drawChart2DForCoordinate(latlng, tsidx) {
-  //here we convert the given coordinate into the nearest cell from the Centroids.js file
-  let curDist;
-  let minDist = 99999999;
-  let cellID;
-
-  //one degree longitude is approx 111,139 m.
-  //let's allow maximum 50m 
-  let maxDistAllowed = 50 / 111139;
-
-  //make sure we don't see the buttons for dambreaks when drawing 2D Depths
-  StyleDambreakButtons(undefined, undefined);
-
-  //search for the nearest cell, given our clicked location
-  for (let i = 0; i < Centroids.features.length; i++) {
-    curDist = Pythagoras(latlng.lat, latlng.lng, Centroids.features[i].geometry.coordinates[1], Centroids.features[i].geometry.coordinates[0]);
-    if (curDist < minDist) {
-      minDist = curDist;
-      cellID = Centroids.features[i].properties.i;
-    }
-  }
-
-  //draw our chart
-  if (cellID && minDist <= maxDistAllowed) {
-    populateTable2D(cellID);
-    drawChart2DDepth(cellID, tsidx);
-  } else {
-    clearChart2D();
-  }
-  return cellID; //return the ID of the selected cell to the calling function
-}
-
-function drawChartWQForCoordinate(latlng) {
-  //here we convert the given coordinate into the nearest cell from the Centroids.js file
-  let curDist;
-  let minDist = 99999999;
-  let cellID;
-  let maxDistAllowed = 100;
-
-  //make sure we don't see the buttons for dambreaks when drawing 2D Depths
-  StyleDambreakButtons(undefined, undefined);
-
-  //search for the nearest cell, given our clicked location
-  for (let i = 0; i < Centroids.features.length; i++) {
-    curDist = Pythagoras(latlng.lat, latlng.lng, Centroids.features[i].geometry.coordinates[1], Centroids.features[i].geometry.coordinates[0]);
-    if (curDist < minDist) {
-      minDist = curDist;
-      cellID = Centroids.features[i].properties.i;
-    }
-  }
-
-  //draw our chart
-  if (cellID && minDist <= maxDistAllowed) {
-    drawChartWQ(cellID);
-  } else {
-    clearChartWQ();
-  }
-}
 
 function populateTable1D(ModelID, objectType) {
   if (ModelID) {
@@ -287,7 +229,7 @@ function populateTable1D(ModelID, objectType) {
           let scenario;   //the simulated scenario
 
           scenario = IWRMNodeResults.scenarios[scenarioIdx];
-          myFeature = scenario.features.find(x => x.id === ModelID);
+          myFeature = scenario.features.find(x => x.id == ModelID);
           if (myFeature) {
             SimMax = Math.max(...myFeature.level);
             simSeries = myFeature.level;
@@ -317,7 +259,7 @@ function drawChart1D(ModelID, objectType, parameterIdx) {
   //this function draws the chart for 1D objects
   if (ModelID) {
 
-    console.log("Drawing chart for ", ModelID, ": type ", objectType);
+    console.log("Drawing chart for ", ModelID, ": type ", objectType, " and parameter ", parameterIdx);
 
     switch (objectType) {
       case 'observationpoint':
@@ -334,7 +276,8 @@ function drawChart1D(ModelID, objectType, parameterIdx) {
         drawChart1DObject(ModelID, objectType, parameterIdx)
         break;
       case 'Basin':
-        drawChart1DObject(ModelID, objectType, parameterIdx)
+        console.log("Drawing chart for basin");
+        drawBasinChart(ModelID, parameterIdx, getTimestepIndex());
         break;
       default:
         break;
@@ -810,6 +753,33 @@ function StyleObservationpointsButtons(active_observationpoint_id, active_observ
 }
 
 
+function StyleBasinButtons(active_basin_id, active_basin_parameter) {
+  let basinsdiv = document.getElementById("basincontainer");
+  if (!active_basin_id) {
+    basinsdiv.style.display = 'none';
+  } else {
+    basinsdiv.style.display = 'block';
+  }
+
+  let levelbutton = document.getElementById("levelbutton");
+  let storagebutton = document.getElementById("storagebutton");
+
+  // //initialize all buttons to no border
+  levelbutton.style.borderWidth = '0px';
+  levelbutton.style.boxShadow = '0px 0px #000000 ';
+  storagebutton.style.borderWidth = '0px';
+  storagebutton.style.boxShadow = '0px 0px #000000 ';
+
+  if (active_basin_parameter == 'level') {
+    levelbutton.style.borderWidth = '2px';
+    levelbutton.style.boxShadow = '2px 3px 2px #999999';
+  } else if (active_basin_parameter == 'storage') {
+    storagebutton.style.borderWidth = '2px';
+    storagebutton.style.boxShadow = '2px 3px 2px #999999';
+  }
+}
+
+
 function StyleDambreakButtons(active_dambreak_id, active_dambreak_parameter) {
   let dambreakdiv = document.getElementById("dambreakcontainer");
   if (!active_dambreak_id) {
@@ -1162,6 +1132,223 @@ function drawObservationpointChart(ID, parameterIdx, tsidx) {
         nSeries++;
       } else if (parameterIdx == 2) {
         seriesIdx = addDateTimeSeries(Observationpointresults.scenarios[myScenarioIdx].scenario, "volume", header, dates, Observationpointresults.scenarios[myScenarioIdx].timesteps_second, myFeature.discharge, seriesIdx, 1, true);
+        nSeries++;
+      }
+    }
+
+    //finally add our observed data
+    let myObserved = measurements.locations.find(x => x.ModelID === ID);
+    if (myObserved) {
+
+      if (parameterIdx == 0 && myObserved.h) {
+        seriesIdx = addObservedSeries(header, dates, myObserved.h.dates, myObserved.h.values, seriesIdx);
+        nSeries++;
+      } else if (parameterIdx == 1 && myObserved.Q) {
+        seriesIdx = addObservedSeries(header, dates, myObserved.Q.dates, myObserved.Q.values, seriesIdx);
+        nSeries++;
+      } else if (parameterIdx == 2 && myObserved.Q) {
+        seriesIdx = addObservedSeries(header, dates, myObserved.Q.dates, myObserved.Q.values, seriesIdx, true);
+        nSeries++;
+      } else {
+        console.log("No observed data found for ", ID);
+      }
+    } else {
+      console.log("No observed data found for ", ID);
+    }
+
+    //add our header to the results array
+    arr.push(header);
+
+    //and add all our data to the results array!
+    let xAxisTitle = "Datum";
+    if (xaxisrelative) {
+
+      //set the starttime of our event so we can calculate the difference in hours
+      xAxisTitle = "Tijd na aanvang simulatie (uren)"
+      if (MeshResults.scenarios[0].DambreakT0Seconds) {
+        xAxisTitle = "Tijd na aanvang bres (uren)"
+        EventT0.setSeconds(EventT0.getSeconds() + MeshResults.scenarios[0].DambreakT0Seconds);
+        dambreaktsidx = GetDambreakTimestepIndex(dates, EventT0);
+      }
+
+      let i = 0;
+      Object.keys(dates).forEach(key => {
+
+        let myDate = new Date(key);
+        let Hours = getDifferenceBetweenTwoDatesInHours(EventT0, myDate);
+
+        //only plot from two hours before our event
+        if (Hours >= 0) {
+          values = [];
+          values.push(Hours);
+
+          if (i == tsidx) {
+            values.push("nu");
+          } else {
+            values.push(null);
+          }
+
+          if (dambreaktsidx >= 0 && i == dambreaktsidx) {
+            values.push("bres")
+          } else {
+            values.push(null);
+          }
+
+          for (let j = 0; j < nSeries; j++) {
+            values.push(dates[key][j + 1]);
+          }
+          arr.push(values);
+        }
+        i++;
+      });
+
+    } else {
+      let i = 0;
+
+      //set our dambreak timestep index, if present
+      if (MeshResults.scenarios.length > 0 && MeshResults.scenarios[0].DambreakT0Seconds) {
+        EventT0.setSeconds(EventT0.getSeconds() + MeshResults.scenarios[0].DambreakT0Seconds);  //set EventT0 equal to the start of our simulation
+        dambreaktsidx = GetDambreakTimestepIndex(dates, EventT0);
+      }
+
+      Object.keys(dates).forEach(key => {
+
+        values = [];
+        values.push(new Date(key));
+
+        if (i == tsidx) {
+          values.push("nu");
+        } else {
+          values.push(null);
+        }
+
+        console.log("pushing bres");
+        if (dambreaktsidx >= 0 && i == dambreaktsidx) {
+          values.push("bres")
+        } else {
+          values.push(null);
+        }
+
+        for (let j = 0; j < nSeries; j++) {
+          values.push(dates[key][j + 1]);
+        }
+        i++;
+        arr.push(values);
+      });
+    }
+
+    // Set chart options
+    var options = {
+      // 'title': ID,
+      annotations: {
+        stem: {
+          color: '#097138'
+        },
+        style: 'line'
+      },
+      legend: {
+        position: 'right',
+        textStyle: {
+          fontName: 'Helvetica',
+          fontSize: 14,
+        }
+      },
+      chartArea: {
+        right: 200,   // set this to adjust the legend width
+        left: 60,     // set this eventually, to adjust the left margin
+      },
+      'width': 600,
+      'height': 350,
+      vAxis: {
+        title: vAxisTitle,
+        textStyle: {
+          fontName: 'Helvetica',
+          fontSize: 14,
+        },
+        titleTextStyle: {
+          fontName: 'Helvetica',
+          fontSize: 16,
+        }
+      },
+      hAxis: {
+        title: xAxisTitle,
+        textStyle: {
+          fontName: 'Helvetica',
+          fontSize: 14,
+        },
+        titleTextStyle: {
+          fontName: 'Helvetica',
+          fontSize: 16,
+        }
+        // viewWindow: {
+        //   min: 0
+        // }
+      },
+      seriesType: 'line',
+      // series: { 0: { type: 'scatter', pointSize: 1 } },
+      // series: {1: {type: 'line'}},
+    };
+
+    console.log("plotting now");
+
+    // Instantiate and draw our chart, passing in some options.
+    var chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
+    chart.draw(google.visualization.arrayToDataTable(arr), options);
+
+  }
+}
+
+
+function drawBasinChart(ID, parameterIdx, tsidx) {
+
+  console.log("drawing chart for basin ", ID, " parameterIdx ", parameterIdx, " tsidx ", tsidx);
+
+  if (ID) {
+
+    //prepare a Google datatable for our chart, create a column for the date and set the chart title and the axis title
+    // let data = new google.visualization.DataTable();
+    let arr = [];
+    let header = [];
+    let values = [];
+
+    let EventT0 = new Date(Settings.SimulationT0);
+    let dambreaktsidx = -1;
+
+    // data.addColumn('date', 'Date');
+    header.push("Date");
+    header.push({ role: 'annotation', type: 'string' });  //annotation for current timestep
+    header.push({ role: 'annotation', type: 'string' });  //annotation for time breach
+
+    let chartTitle = document.getElementById("chart_title");
+    chartTitle.innerText = ID;
+    let vAxisTitle = "titel";
+    let dates = {};
+
+    if (parameterIdx == 0) {
+      vAxisTitle = "Level (m + AD)";
+    } else if (parameterIdx == 1) {
+      vAxisTitle = "Storage (m3)";
+    }
+
+    //count the number of scenario's wwe have. This will be the number of columns in our datatable
+    nScenarios = IWRMNodeResults.scenarios.length;
+    let nSeries = 0;
+
+    //each scenario gets its own column for the data to be stored in
+    let seriesIdx = -1
+    for (let myScenarioIdx = 0; myScenarioIdx < IWRMNodeResults.scenarios.length; myScenarioIdx++) {
+
+      //find the feature we're dealing with!
+      console.log("Finding feature ", ID);
+      let myFeature = IWRMNodeResults.scenarios[myScenarioIdx].features.find(x => x.id == ID);
+      console.log("Feature is ", myFeature);
+
+      if (parameterIdx == 0) {
+        //only plot the currently active scenario because otherwise we have too many lines!
+        seriesIdx = addDateTimeSeries(IWRMNodeResults.scenarios[myScenarioIdx].scenario, "level", header, dates, IWRMNodeResults.scenarios[myScenarioIdx].timesteps_second, myFeature.level, seriesIdx);
+        nSeries++;
+      } else if (parameterIdx == 1) {
+        seriesIdx = addDateTimeSeries(IWRMNodeResults.scenarios[myScenarioIdx].scenario, "storage", header, dates, IWRMNodeResults.scenarios[myScenarioIdx].timesteps_second, myFeature.storage, seriesIdx);
         nSeries++;
       }
     }
@@ -1887,329 +2074,3 @@ function addObservedSeries(header, dates, ResultDates, ResultValues, seriesIdx, 
 }
 
 
-
-function addDateTimeSeriesFromIncrementalData(scenarioName, parameter, header, dates, timesteps_second, tsidx_incremental, values_incremental, seriesIdx, multiplier = 1) {
-  //this function is a little more complicated than addDateTimeSeries since it involves an extra step in retrieving the requested data per timestep
-  seriesIdx++;
-  header.push(scenarioName);
-
-  let startDate = new Date(Settings.SimulationT0);
-  let timesteps_template = Settings.timesteps_second;   //the timesteps specified in Settings form the basis for all our charts
-
-  let year = startDate.getFullYear();
-  let month = startDate.getMonth();
-  let day = startDate.getDate();
-  let hour = startDate.getHours();
-  let minute = startDate.getMinutes();
-  let second = startDate.getSeconds();
-
-  //walk through all timesteps as specified in the Settings.js file and set the value for the current timestep + scenario in the datatable
-  for (let tsidx = 0; tsidx < timesteps_template.length; tsidx++) {
-
-    //set the date
-    let curDate = new Date(year, month, day, hour, minute, second + timesteps_template[tsidx]);
-    let curDateStr = curDate.toISOString().substring(0, 19)                      //convert our date to the ISO 8601 format, only keep YYYY-MM-DDTHH:mm:ss
-
-    //check if this date is already existing as a key in our dictionary. If not, add it
-    if (!(curDateStr in dates)) {
-      dates[curDateStr] = {};
-    }
-
-    //so first look up the corresponding index for thit timestep in our vector data's timesteps array
-    let series_tsindex = timesteps_second.indexOf(timesteps_template[tsidx]);
-
-    if (series_tsindex >= 0) {
-      //we found the corresponding index in the vector data's timesteps array: now look up the last incremental value before this timestep
-      for (let incidx = tsidx_incremental.length - 1; incidx >= 0; incidx--) {
-        if (tsidx_incremental[incidx] <= series_tsindex) {
-          //we have found the corresponding index number in the incremental timesteps array
-          dates[curDateStr][seriesIdx + 1] = multiplier * values_incremental[incidx];   //set the value for this scenario and timestep in our dictionary 
-          break;
-        }
-      }
-    } else {
-      //this timestep has not been found in our vector result's timesteps array. 
-      //We must find the last timestep before this one so we can retrieve the corresponding incremental value
-      for (let series_tsindex = timesteps_second.length - 1; series_tsindex >= 0; series_tsindex--) {
-        if (timesteps_second[series_tsindex] <= timesteps_template[tsidx]) {
-
-          //finally search our incremental index
-          for (let incidx = tsidx_incremental.length - 1; incidx >= 0; incidx--) {
-            if (tsidx_incremental[incidx] <= series_tsindex) {
-              //we have found the corresponding index number in the incremental timesteps array
-              dates[curDateStr][seriesIdx + 1] = multiplier * values_incremental[incidx];   //set the value for this scenario and timestep in our dictionary 
-              break;
-            }
-          }
-          break;
-        }
-      }
-    }
-  }
-  return seriesIdx;
-}
-
-
-function clearChart2D() {
-  let table = document.getElementById("stats_table");
-  table.innerHTML = "";                                           //clear all existing content
-  var header = table.createTHead()
-  var row = header.insertRow(0);
-  var cell = row.insertCell(0);
-  cell.innerHTML = "";
-  cell = row.insertCell(1);
-  cell.innerHTML = "Max. diepte (m)";
-  cell = row.insertCell(2);
-  cell.innerHTML = "Max. str.snelh (m/s)";
-  cell = row.insertCell(3);
-  cell.innerHTML = "Aankomsttijd (uur)";
-
-  var chart = document.getElementById('chart_div');
-  chart.innerHTML = "";
-
-}
-
-function clearChartWQ() {
-  let table = document.getElementById("stats_table");
-  table.innerHTML = "";                                           //clear all existing content
-  var header = table.createTHead()
-  var row = header.insertRow(0);
-  var cell = row.insertCell(0);
-  cell.innerHTML = "";
-  cell = row.insertCell(1);
-  cell.innerHTML = "Botulisme";
-  cell = row.insertCell(2);
-  cell.innerHTML = "Drijflagen";
-  cell = row.insertCell(3);
-  cell.innerHTML = "Zuurstofgebrek";
-
-}
-
-
-function addRelativeTimeSeries(seriesIdx) {
-  seriesIdx++;
-
-  // //add a column to our datatable for this scenario's result
-  // // data.addColumn('number', MeshResults.scenarios[scenarioIdx].scenario);
-  // header.push(scenario.scenario + ' ' + parameter);
-
-  // let startDate = new Date(scenario.SimulationT0);
-  // let ts = scenario.dambreaks[0].timesteps_second;
-
-  // let year = startDate.getFullYear();
-  // let month = startDate.getMonth();
-  // let day = startDate.getDate();
-  // let hour = startDate.getHours();
-  // let minute = startDate.getMinutes();
-  // let second = startDate.getSeconds();
-
-  // //walk through all timesteps and set the value for the current timestep + scenario in the datatable
-  // for (let tsidx = 0; tsidx < ts.length; tsidx++) {
-
-  //   //set the date
-  //   let curDate = new Date(year, month, day, hour, minute, second + scenario.dambreaks[0].timesteps_second[tsidx]);
-  //   let curDateStr = curDate.toISOString().substring(0, 19)                      //convert our date to the ISO 8601 format, only keep YYYY-MM-DDTHH:mm:ss
-
-  //   //check if this date is already existing as a key in our dictionary. If not, add it
-  //   if (!(curDateStr in dates)) {
-  //     dates[curDateStr] = {};
-  //   }
-  //   dates[curDateStr][seriesIdx + 1] = multiplier * timeseries[tsidx];   //set the value for this scenario and timestep in our dictionary
-  // }
-  return seriesIdx;
-}
-
-
-function populateTable2D(cellID) {
-
-  let DambreakT0Seconds;
-
-  if (MeshResults.scenarios) {
-    DambreakT0Seconds = MeshResults.scenarios[scenarioIdx].DambreakT0Seconds;
-  } else {
-    DambreakT0Seconds = 0;
-  }
-
-  if (cellID) {
-
-    //set some generic variables that are valid for all paths
-    let startDate = new Date(Settings.SimulationT0);
-    let ts = MeshResults.scenarios[scenarioIdx].timesteps_second;
-    let curDate = startDate;
-
-    let chartTitle = document.getElementById("chart_title");
-    chartTitle.innerText = "Verloop overstroming cel " + cellID;
-
-    //populate our table for the results statistics
-    let table = document.getElementById("stats_table");
-    table.innerHTML = "";                                           //clear all existing content
-    var header = table.createTHead()
-    var row = header.insertRow(0);
-    var cell = row.insertCell(0);
-    cell.innerHTML = "";
-    cell = row.insertCell(1);
-    cell.innerHTML = "Max. diepte (m)";
-    cell = row.insertCell(2);
-    cell.innerHTML = "Max. str.snelh (m/s)";
-    cell = row.insertCell(3);
-    cell.innerHTML = "Aankomsttijd (uur)";
-
-    //and write the results statistics for each of the scenario's
-    for (let scenidx = 0; scenidx < MeshResults.scenarios.length; scenidx++) {
-
-      //use a find statement here since the feature index difference between scenarios
-      let myFeature = MeshResults.scenarios[scenidx].features.find(x => x.i === cellID);
-
-      let maxd = myFeature.maxd;
-      let maxv = myFeature.maxv;
-      let tinu = myFeature.tinu;
-
-      row = table.insertRow(1);
-      cell = row.insertCell(0);
-      cell.innerHTML = MeshResults.scenarios[scenidx].scenario;
-      cell = row.insertCell(1);
-      cell.innerHTML = RoundNumber(maxd, 2);
-      cell = row.insertCell(2);
-      cell.innerHTML = RoundNumber(maxv, 2);
-      cell = row.insertCell(3);
-      cell.innerHTML = RoundNumber(tinu, 2);
-    }
-  }
-}
-
-
-
-function drawChartWQ(cellID) {
-
-  let DambreakT0Seconds;
-
-  if (MeshResults.scenarios) {
-    DambreakT0Seconds = MeshResults.scenarios[scenarioIdx].DambreakT0Seconds;
-  }
-  let Hours;
-
-  if (cellID) {
-
-    let chartTitle = document.getElementById("chart_title");
-    chartTitle.innerText = "Waterkwaliteitsindicator cel " + cellID;
-
-    //create our table for the results statistics
-    let table = document.getElementById("stats_table");
-    table.innerHTML = "";                                           //clear all existing content
-    var header = table.createTHead()
-    var row = header.insertRow(0);
-    var cell = row.insertCell(0);
-    cell.innerHTML = "";
-    cell = row.insertCell(1);
-    cell.innerHTML = "Botulisme.";
-    cell = row.insertCell(2);
-    cell.innerHTML = "Drijflagen.";
-    cell = row.insertCell(3);
-    cell.innerHTML = "Zuurstofgebrek.";
-
-    //store our results for this location in a nested array. First item is the scenario, second contains the depths
-    //so it's results[scenarioIdx].depths[tsidx]
-    let data = new google.visualization.DataTable();
-    data.addColumn('number', 'Tijdstap (uren)');
-
-    let depths = [];
-    let timesteps = [];
-
-    //and write the results statistics for each of the scenario's
-    for (let scenidx = 0; scenidx < MeshResults.scenarios.length; scenidx++) {
-
-      //use a find statement here since the feature index difference between scenarios
-      let myFeature = MeshResults.scenarios[scenidx].features.find(x => x.i === cellID);
-
-      let maxd = myFeature.maxd;
-      let maxv = myFeature.maxv;
-      let tinu = myFeature.tinu;
-
-      // let maxd = MeshResults.scenarios[scenidx].features[cellidx].maxd;
-      // let maxv = MeshResults.scenarios[scenidx].features[cellidx].maxv;
-      // let tinu = MeshResults.scenarios[scenidx].features[cellidx].tinu;
-      row = table.insertRow(1);
-      cell = row.insertCell(0);
-      cell.innerHTML = MeshResults.scenarios[scenidx].scenario;
-      cell = row.insertCell(1);
-      cell.innerHTML = RoundNumber(maxd, 2);
-      cell = row.insertCell(2);
-      cell.innerHTML = RoundNumber(maxv, 2);
-      cell = row.insertCell(3);
-      cell.innerHTML = RoundNumber(tinu, 2);
-
-      depths[scenidx] = myFeature.d;
-      timesteps[scenidx] = myFeature.t;
-      data.addColumn('number', MeshResults.scenarios[scenidx].scenario + ' (cm)');
-
-    }
-
-
-    //create our datatable by stepping through each timestep
-    for (let tsidx = 0; tsidx < MeshResults.scenarios[scenarioIdx].timesteps_second.length; tsidx++) {
-
-      //only process timesteps after the dambreak
-      // Hours = (MeshResults.scenarios[scenarioIdx].timesteps_second[tsidx] - DambreakT0Seconds) / 3600;
-
-      Hours = (MeshResults.scenarios[scenarioIdx].timesteps_second[tsidx]) / 3600;
-
-      if (Hours >= 0) {
-        let row = [Hours];                            //create a new row for our datatable
-        for (let k = 0; k < depths.length; k++) {     //loop trough the waterdepts for each scenario
-
-          //find the last changed value just before or at the current timestep index tsidx
-          let lastidx = 0;
-          for (let i = 0; i < timesteps[k].length; i++) {
-            if (timesteps[k][i] <= tsidx) {
-              lastidx = i;
-            }
-          }
-          row.push(depths[k][lastidx]);
-
-        }
-        data.addRows([row]);
-      }
-    }
-
-
-    // Set chart options
-    var options = {
-      legend: {
-        position: 'right',
-        textStyle: {
-          fontName: 'Helvetica',
-          fontSize: 14,
-        }
-      },
-      vAxis: {
-        title: "Waterdiepte (cm)",
-        textStyle: {
-          fontName: 'Helvetica',
-          fontSize: 14,
-        },
-        titleTextStyle: {
-          fontName: 'Helvetica',
-          fontSize: 16,
-        }
-      },
-      hAxis: {
-        title: 'Tijd na aanvang gebeurtenis (uren)',
-        textStyle: {
-          fontName: 'Helvetica',
-          fontSize: 14,
-        },
-        titleTextStyle: {
-          fontName: 'Helvetica',
-          fontSize: 16,
-        },
-        viewWindow: {
-          min: 0
-        }
-      }
-    };
-
-    // Instantiate and draw our chart, passing in some options.
-    var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
-    chart.draw(data, options);
-  }
-}

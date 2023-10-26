@@ -89,8 +89,12 @@
     var structuresChecked = Settings.structuresChecked;
 
     //parameters to keep track of the active dambreak id and parameter
-    let active_breach_id;
+    let active_breach_id;        
     let active_dambreak_parameter = "dambreak_crest_width";
+
+    //parameters to keep track of the active basin id and parameter
+    let active_basin_id;
+    let active_basin_parameter = "level";
 
     //parameters to keep track of the active observation point id and parameter
     let active_observationpoint_id;
@@ -274,6 +278,10 @@
         onclick="toggleDambreakParameter('dambreak_cumulative_discharge')">Volume</button>
       <button class="chartbutton" id="headbutton" onclick="toggleDambreakParameter('dambreak_head')">Verval</button>
       <!-- <button class="chartbutton" id="growthbutton" onclick="toggleDambreakParameter('dambreak_growth')">Groei</button> -->
+    </div>
+    <div id="basincontainer">
+      <button class="chartbutton" id="levelbutton" onclick="toggleBasinParameter('level')">Level</button>
+      <button class="chartbutton" id="storagebutton" onclick="toggleBasinParameter('storage')">Storage</button>
     </div>
     <div id="stats_div" class="stats_table">
       <table id="stats_table" class="stats_table">
@@ -1297,8 +1305,10 @@
           active_chart_source = 1;
           active_breach_id = undefined;
           active_observationpoint_id = undefined;
+          active_basin_id = item.ID;
           StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
           StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          StyleBasinButtons(active_basin_id, active_basin_parameter);
           ActiveID = item.ID;
           activeObjectType = item.ObjectType;
           activeParameter = ActiveParameter.level;
@@ -1779,6 +1789,18 @@
         drawDambreakChart(active_breach_id, active_dambreak_parameter, getTimestepIndex());
       }
     }
+	
+	function toggleBasinParameter(parameter_name) {
+      //this function sets the active basin parameter so the corresponding parameter is plotted in the chart
+      active_basin_parameter = parameter_name;
+      StyleBasinButtons(active_basin_id, active_basin_parameter);
+
+      if (active_basin_parameter == 'level') {
+        drawChart1D(active_basin_id, "Basin", 0)
+      } else if (active_basin_parameter == 'storage') {
+        drawChart1D(active_basin_id, "Basin", 1)
+      }
+	}
 
     function toggleObservationpointsParameter(parameter_name) {
       //this function sets the active dambreak parameter so the corresponding parameter is plotted in the chart
