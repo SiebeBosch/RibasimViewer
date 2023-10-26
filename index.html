@@ -446,7 +446,10 @@
       $("#divIWRMLevelBoundary").hide();
       $("#divIWRMFlowBoundary").hide();
       $("#divIWRMTerminal").hide();
-    }
+    } else {
+		console.log("Hiding unavailable checkboxes");
+		hideUnavailableRibasimCheckboxes();
+	}
 
     if (!hotspots || !hotspots.features || hotspots.features.length === 0) {
       $("#divhotspots").hide();
@@ -455,6 +458,42 @@
     if (!measurements || !measurements.locations || measurements.locations.length === 0) {
       $("#divdifferencewithmeasurements").hide();
     }
+	
+	
+	
+	function hideUnavailableRibasimCheckboxes() {
+		// Extract all node types from the IWRMNodes object
+		let availableNodeTypes = new Set();
+		for (let feature of IWRMNodes.features) {
+			availableNodeTypes.add(feature.properties.NodeType);
+			//console.log("availableNodeType added ", feature.properties.NodeType);
+		}
+
+		// Define a mapping between checkbox ids and node types
+		const checkboxIdToNodeType = {
+			divIWRMBasins: "Basin",
+			divIWRMManningResistance: "ManningResistance",
+			divIWRMTabulatedRatingCurve: "TabulatedRatingCurve",
+			divIWRMFractionalFlow: "FractionalFlow",
+			divIWRMPump: "Pump",
+			divIWRMLinearResistance: "LinearResistance",
+			divIWRMLevelBoundary: "LevelBoundary",
+			divIWRMFlowBoundary: "FlowBoundary",
+			divIWRMTerminal: "Terminal"
+			// Add more mappings here according to your data
+		};
+
+		// Iterate over each checkbox and hide those whose node type is not available
+		for (let checkboxId in checkboxIdToNodeType) {
+			console.log("checkboxId is ", checkboxId);
+			if (!availableNodeTypes.has(checkboxIdToNodeType[checkboxId])) {
+				console.log("No nodes found of type ", checkboxIdToNodeType[checkboxId]);
+				document.getElementById(checkboxId).style.display = 'none'; // Directly hide the div
+			} else {
+				console.log("Nodes found of type", checkboxIdToNodeType[checkboxId]);
+			}
+		}
+	}
 
     divdifferencewithmeasurements
 
