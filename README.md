@@ -16,7 +16,7 @@ Request your own token at https://docs.mapbox.com/help/getting-started/access-to
 In case the application is populated and launched from within the community edition of HydroToolbox (Hydroconsult) the required token is included.
 
 ## Populating the viewer
-Populating the viewer with the topology and results of your RIBASIM-project can be done with the Community Edition of HydroToolbox software (Hydroconsult, The Netherlands). 
+Populating the viewer with the topology and results of your RIBASIM-project can be done with the Community Edition of [HydroToolbox](https://www.dropbox.com/scl/fi/y7bnx3ti3fr9530cvnp08/HydroToolboxSetup-2.6.2.0-x64.zip?rlkey=qmu6h9dchj9b9xvsi02bo6gy3&dl=0) software, version 2.6.2.0 (Hydroconsult, The Netherlands). 
 This application is currently in development but the first release with support for RIBASIM may be expected by october 2023.
 
 ## Launching the viewer
