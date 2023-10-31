@@ -156,7 +156,7 @@
     <a href="javascript:void(0)" class="closebtn" onclick="closeLeftPanel()">&times;</a>
     <hr class="divider">
     <div class="radiogroup">
-      <div class="sectionheader">Achtergrond</div>
+      <div class="sectionheader">Backdrop</div>
       <div class="radiobutton"><input type="radio" name="backdrop" value="OSML" checked
           onclick="refreshEntireMap('OSML')">openstreetmap light</div>
       <div class="radiobutton"><input type="radio" name="backdrop" value="OSM"
@@ -168,23 +168,21 @@
       <div class="radiobutton"><input type="radio" name="backdrop" value="OSM_DARK"
           onclick="refreshEntireMap('OSM_DARK')">donker</input></div>
     </div>
-    <hr class="divider">
     <div class="radiogroup">
-      <div class="sectionheader">1D Hydrodynamica</div>
       <div class="radiobutton" id="divobservationpoints"><input type="checkbox" id="observationpoints" checked="true"
           onclick="plot1DObjects()">observatiepunten</input></div>
       <div class="radiobutton" id="divcalculationpoints"><input type="checkbox" id="calculationpoints" checked="true"
           onclick="plot1DObjects()">rekenpunten</input></div>
       <div class="radiobutton" id="divstructures"><input type="checkbox" id="structures"
           onclick="plot1DObjects()">kunstwerken</input></div>
-      <div class="radiobutton"><input type="checkbox" id="reaches" checked="true"
-          onclick="plotReaches()">watergangen</input></div>
       <div class="radiobutton" id="divhotspots"><input type="checkbox" id="hotspots" checked="true"
           onclick="plot1DObjects()">knelpunten</input></div>
     </div>
     <hr class="divider">
     <div class="radiogroup">
       <div class="sectionheader">RIBASIM</div>
+      <div class="radiobutton"><input type="checkbox" id="reaches" checked="true"
+          onclick="plotReaches()">edges</input></div>
       <div class="radiobutton" id="divIWRMBasins"><input type="checkbox" id="IWRMBasins" onclick="plot1DObjects()"
           checked>Basins</input></div>
       <div class="radiobutton" id="divIWRMManningResistance"><input type="checkbox" id="IWRMManningResistance"
@@ -210,16 +208,16 @@
       <select class="scenarios" id="scenarioslist" onchange="switchScenario()">
       </select>
     </div>
-    <hr class="divider">
-    <div class="radiogroup">
+    <hr class="divider" style="display: none;">
+    <div class="radiogroup" style="display: none;">
       <div class="sectionheader">Resultaten 1D</div>
       <div class="radiobutton"><input type="radio" name="parameter1D" checked="true"
           onclick="selected1DResults = 0;Update1DObjectsStyle(0)" />actuele waarde</div>
       <div class="radiobutton" id="divdifferencewithmeasurements"><input type="radio" name="parameter1D"
           onclick="selected1DResults = 1;Update1DObjectsStyle(0)" />verschil maximum met meting</div>
     </div>
-    <hr class="divider">
-    <div class="radiogroup">
+    <hr class="divider" style="display: none;">
+    <div class="radiogroup" style="display: none;">
       <div class="sectionheader">Resultaten 2D</div>
       <div class="radiobutton"><input type="radio" name="parameter2D" value="waterdepth" checked="true"
           onclick="selectedMap = 0;redrawSelectedMap(true)" />waterdiepte per tijdstap</div>
@@ -238,15 +236,13 @@
     </div>
     <hr class="divider">
     <div class="radiogroup">
-      <div class="sectionheader">Opties</div>
-      <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleChart()">toon
-        grafiek</input></div>
-      <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleSlider()">toon
-        slider</input></div>
+      <div class="sectionheader">Options</div>
+      <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleChart()">show chart</input></div>
+      <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleSlider()">show slider</input></div>
     </div>
     <hr class="divider">
     <div class="radiogroup">
-      <div class="sectionheader">Transparantie</div>
+      <div class="sectionheader">Transparency</div>
       <div class="range-wrap"><input type="range" min="0" max="100" value="0" class="slider" id="transparency"
           onChange="changeTransparency()"></div>
     </div>
@@ -256,11 +252,10 @@
   <div id="mapid"></div>
   <div id="bubble"></div>
   <div class="chartcontainer" id="mychart">
-    <div id="chart_title">Verloop inundatie</div>
+    <div id="chart_title">Chart</div>
     <div id="chart_div">
     </div>
-    <div class="radiobutton"><input type="checkbox" id="xaxistype" value="false" onclick="toggleXAxis()">Tijd in
-      uren</input></div>
+    <div class="radiobutton"><input type="checkbox" id="xaxistype" value="false" onclick="toggleXAxis()">Relative time</input></div>
     <div id="observationpointscontainer">
       <button class="chartbutton" id="hbutton"
         onclick="toggleObservationpointsParameter('observationpoint_waterlevel')">Hoogte</button>
@@ -286,24 +281,24 @@
     <div id="stats_div" class="stats_table">
       <table id="stats_table" class="stats_table">
         <tr>
-          <td>Maximale diepte (m)</td>
+          <td>Maximum depth (m)</td>
           <td id="maxd"></td>
         </tr>
         <tr>
-          <td>Maximale stroomsnelheid (m/s)</td>
+          <td>Maximum velocity (m/s)</td>
           <td id="maxv"></td>
         </tr>
         <tr>
-          <td>Tijd tot inundatie (uren)</td>
+          <td>Time to flooding (hours)</td>
           <td id="tinund"></td>
         </tr>
       </table>
     </div>
   </div>
   <div id="legendcontainer">
-    <div id="legendtitle">Legenda</div>
-    <div id="legendlayeritems" class="legenditems">
-      <div id="legendlayer" class="legendunit">Waterdiepte (cm)</div>
+    <div id="legendtitle">Legend</div>
+	<div id="legendlayeritems" class="legenditems" style="display: none;">
+      <div id="legendlayer" class="legendunit">Water depth (cm)</div>
       <div id="legenditem">
         <div
           style="background-color: rgb(0,31,43); text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
@@ -343,42 +338,30 @@
     </div>
     <br />
     <div id="legendobjectitems" class="legenditems">
-      <div id="legendobjects" class="legendunit">Kaartobjecten:</div>
-      <div id="legenditem">
-        <div
-          style="background-color: white; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
-        </div>
-        <div>rekenpunt</div>
-      </div>
+      <div id="legendobjects" class="legendunit">Node types:</div>
       <div id="legenditem">
         <div
           style="background-color: darkblue; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
         </div>
-        <div>observatiepunt</div>
+        <div>Basin</div>
+      </div>
+      <div id="legenditem">
+        <div
+          style="background-color: red; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
+        </div>
+        <div>Manning's</div>
       </div>
       <div id="legenditem">
         <div
           style="background-color: green; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
         </div>
-        <div>kunstwerk</div>
+        <div>Rating curve</div>
       </div>
       <div id="legenditem">
         <div
           style="background-color: purple; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
         </div>
-        <div>knelpunt</div>
-      </div>
-      <div id="legenditem">
-        <div
-          style="background-color: #E74C3C; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
-        </div>
-        <div>breslocatie</div>
-      </div>
-      <div id="legenditem">
-        <div
-          style="background-color: orange; text-align:center; border:1px solid gray; border-radius: 50%; height:11px; width:11px;box-shadow: 5px 2px 4px #888888;">
-        </div>
-        <div>secundaire bres</div>
+        <div>Flow boundary</div>
       </div>
     </div>
   </div>
