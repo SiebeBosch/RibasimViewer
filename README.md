@@ -16,7 +16,9 @@ Request your own token at https://docs.mapbox.com/help/getting-started/access-to
 In case the application is populated and launched from within the community edition of HydroToolbox (Hydroconsult) the required token is included.
 
 ## Populating the viewer
-Populating the viewer with the topology and results of your Ribasim-project can be done with the Community Edition of [HydroToolbox](https://www.dropbox.com/scl/fi/y7bnx3ti3fr9530cvnp08/HydroToolboxSetup-2.6.2.0-x64.zip?rlkey=qmu6h9dchj9b9xvsi02bo6gy3&dl=0) software, version 2.6.2.0 (Hydroconsult, The Netherlands). A brief video demonstration of how to publish Ribasim results in the webviewer can be found [here](https://www.dropbox.com/scl/fi/3g2m82hacxfy7y71suyme/Ribasim_publish_webviewer.mp4?rlkey=nhhe2cq6qicakfliqjgawmeqg&dl=0).
+Populating the viewer with the topology and results of your Ribasim-project can be done with the Community Edition of [HydroToolbox](https://www.dropbox.com/scl/fi/y7bnx3ti3fr9530cvnp08/HydroToolboxSetup-2.6.2.0-x64.zip?rlkey=qmu6h9dchj9b9xvsi02bo6gy3&dl=0) software, version 2.6.2.0 (Hydroconsult, The Netherlands). Currently, HydroToolbox is suitable for postprocessing results of Ribasim version 2023-08.
+
+A brief video demonstration of how to publish Ribasim results in the webviewer can be found [here](https://www.dropbox.com/scl/fi/3g2m82hacxfy7y71suyme/Ribasim_publish_webviewer.mp4?rlkey=nhhe2cq6qicakfliqjgawmeqg&dl=0).
 
 ## Launching the viewer
 Launching the viewer is simply a matter of double-clicking the index.html file. The application will open in your default internet-browser.
