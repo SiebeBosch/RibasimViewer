@@ -17,3 +17,16 @@ js/reachobjectsverdict.js
 js/results.js
 js/structuresverdict.js
 js/watersurfaceareas.js old
+webviewer_html/tiles/*
+webviewer_html/js/config.js
+webviewer_html/js/watersurfaceareas.js
+webviewer_html/js/MeshResults.js
+webviewer_html/js/Mesh.js
+webviewer_html/js/Centroids.js
+webviewer_html/js/watersurfaceareas.js
+webviewer_html/js/WQAreas.js
+webviewer_html/js/WQResults.js
+webviewer_html/js/reachobjectsverdict.js
+webviewer_html/js/results.js
+webviewer_html/js/structuresverdict.js
+webviewer_html/js/watersurfaceareas.js old
