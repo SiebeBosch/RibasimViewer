@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:dartleaf/dartleaf.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 void main() {
   runApp(MyApp());
@@ -9,11 +10,24 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Water Balance Dashboard',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      home: Scaffold(
+        body: Stack(
+          children: [
+            FlutterMap(
+              options: MapOptions(
+                initialCenter: LatLng(51.509364, -0.128928),
+                initialZoom: 3.2,
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.app',
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-      home: MyHomePage(),
     );
   }
 }
@@ -111,21 +125,23 @@ class SidePanelWidget extends StatelessWidget {
 class MapAndChartWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // Create the map and chart UI here, possibly using flutter_map and fl_chart packages.
-    return FlutterLeafletMap(
-      options: MapOptions(
-        center: LatLng(51.672, 5.952), // Initial map center coordinates
-        zoom: 10.0, // Initial zoom level
+    return Scaffold(
+      body: Stack(
+        children: [
+          FlutterMap(
+            options: MapOptions(
+              center: LatLng(51.509364, -0.128928),
+              zoom: 3.2,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.app',
+              ),
+            ],
+          ),
+        ],
       ),
-      layers: [
-        TileLayerOptions(
-          urlTemplate:
-              'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-          attribution: '©OpenStreetMap, ©CartoDB',
-          maxZoom: 19,
-        ),
-        // Add other layers as needed
-      ],
     );
   }
 }
