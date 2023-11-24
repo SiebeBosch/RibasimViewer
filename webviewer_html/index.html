@@ -30,6 +30,7 @@
   <script type="text/javascript" src="js/hotspots.js"></script>
   <script type="text/javascript" src="js/Colorgradients.js"></script>
   <script type="text/javascript" src="js/subcatchments.js"></script>
+  <script type="text/javascript" src="js/areas.js"></script>
   <script type="text/javascript" src="js/generalfunctions.js"></script>
   <script type="text/javascript" src="js/meshfunctions.js"></script>
   <script type="text/javascript" src="js/chartfunctions.js"></script>
@@ -180,7 +181,7 @@
     </div>
     <hr class="divider">
     <div class="radiogroup">
-      <div class="sectionheader">RIBASIM</div>
+      <div class="sectionheader">Ribasim</div>
       <div class="radiobutton"><input type="checkbox" id="reaches" checked="true"
           onclick="plotReaches()">edges</input></div>
       <div class="radiobutton" id="divIWRMBasins"><input type="checkbox" id="IWRMBasins" onclick="plot1DObjects()"
@@ -201,6 +202,11 @@
           onclick="plot1DObjects()" checked>Flow Boundary</input></div>
       <div class="radiobutton" id="divIWRMTerminal"><input type="checkbox" id="IWRMTerminal" onclick="plot1DObjects()"
           checked>Terminal</input></div>
+    </div>
+    <hr class="divider">
+    <div class="radiogroup">
+      <div class="sectionheader">Overlays</div>
+      <div class="radiobutton"><input type="checkbox" id="areas" onclick="plotAreas()">areas</input></div>
     </div>
     <hr class="divider">
     <div class="radiogroup">
@@ -1047,7 +1053,7 @@
     }
 
     function toggleChartResultsModule() {
-      //toggles between 2D mode for chart creation and 1D mode 
+      //toggles between 2D mode for chart creation (overland flow) and 1D mode 
       if (activeChartModule == "2D") {
         activeChartModule = "1D";
         mymap.off('click');         //remove the 2D event listener from our 2D enviroment
@@ -1646,6 +1652,32 @@
       ResultsLocation.marker.bindTooltip(ResultsLocation.tooltip);
       ResultsLocations.push(ResultsLocation);
     }
+
+    function plotAreas() {
+  // Remove all existing layers from our layer group
+  featureLayerGroup.clearLayers();
+
+  if (Areas && ("features" in Areas)) {
+    // If checked, add the polygons
+    if (document.getElementById("areas").checked) {
+      L.geoJson(Areas, {
+        pane: 'overlays',
+        style: {
+          interactive: true, // Set interactive to true to enable click events
+          color: "#006400",
+          weight: 1,
+          pane: 'overlays'
+        },
+        onEachFeature: function (feature, layer) {
+          layer.on('click', function (e) { // Correct method to attach click event
+            alert("clicked on area");
+            console.log(e);
+          });
+        }
+      }).addTo(featureLayerGroup);
+    };
+  }
+}
 
     function plot1DObjects() {
 
