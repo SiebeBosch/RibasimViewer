@@ -105,7 +105,7 @@
 
     let xaxisrelative = false;        //whether to plot the chart's x axis in hours relative to the breach
 
-    let active_chart_source = 0;      //0 = 2D depths, 1 = 1D objects, 2 = dambreak
+    let active_chart_source = 0;      //0 = 2D depths, 1 = 1D objects, 2 = dambreak, 3 = waterbalance
     let ActiveID = ""
     let activeObjectType = "";
     let activeParameter = ActiveParameter.WATERLEVEL;
@@ -247,7 +247,7 @@
       <div class="sectionheader">Options</div>
       <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleChart()">show
         chart</input></div>
-      <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleSlider()">show
+      <div class="radiobutton"><input type="checkbox" id="grafiek" onclick="toggleSlider()">show
         slider</input></div>
     </div>
     <hr class="divider">
@@ -408,6 +408,8 @@
 
   <script>
 
+    toggleSlider();
+
     UpdateChartElements();
 
     //1D FLOW NODES
@@ -560,6 +562,7 @@
 
     function switchScenario() {
       scenarioIdx = document.getElementById("scenarioslist").selectedIndex;
+      UpdateChartElements();
       updateChart();                        //update the chart, in case it is active
       redrawSelectedMap(true);
       BreachLocationPointsAndMarkers = [];
@@ -570,6 +573,8 @@
 
     function updateChart() {
       //this function updates the chart if need be
+      console.log("active_chart_source is ", active_chart_source);
+
       switch (active_chart_source) {
         case 0:
           //2D
@@ -582,6 +587,10 @@
           break;
         case 2:
           drawDambreakChart(ActiveID, active_dambreak_parameter, getTimestepIndex());
+          break;
+        case 3:
+          console.log("Updating waterbalance chart");
+          drawWaterBalanceChart(ActiveID);
           break;
         default:
       }
@@ -822,13 +831,13 @@
     }
 
     //populate the select item with the available scenario's
-    MeshResults.scenarios.forEach((item) => this.addScenario(item));
+    Settings.scenarios.forEach((item) => this.addScenario(item));
 
     function addScenario(item) {
       let myscenarios = document.querySelector("#scenarioslist");
       let option = document.createElement('option');
-      option.setAttribute('value', item.scenario);
-      option.appendChild(document.createTextNode(item.scenario));
+      option.setAttribute('value', item);
+      option.appendChild(document.createTextNode(item));
       myscenarios.appendChild(option);
     }
 
@@ -1031,30 +1040,30 @@
 
     function addMapClickHandler() {
       mymap.on('click', (e) => {
-        active_chart_source = 0;
-        ActiveID = drawChart2DForCoordinate(e.latlng, getTimestepIndex());
+        //active_chart_source = 0;
+        //ActiveID = drawChart2DForCoordinate(e.latlng, getTimestepIndex());
 
-        var pinIcon = L.icon({
-          iconUrl: 'css/images/pin.png',
-          //shadowUrl: 'leaf-shadow.png',
+        // var pinIcon = L.icon({
+        //   iconUrl: 'css/images/pin.png',
+        //   //shadowUrl: 'leaf-shadow.png',
 
-          iconSize: [38, 38], // size of the icon
-          //shadowSize:   [50, 64], // size of the shadow
-          iconAnchor: [19, 38], // point of the icon which will correspond to marker's location
-          //shadowAnchor: [4, 62],  // the same for the shadow
-          //popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
-        });
+        //   iconSize: [38, 38], // size of the icon
+        //   //shadowSize:   [50, 64], // size of the shadow
+        //   iconAnchor: [19, 38], // point of the icon which will correspond to marker's location
+        //   //shadowAnchor: [4, 62],  // the same for the shadow
+        //   //popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+        // });
 
 
-        //add a marker where we've clicked
-        pinLayerGroup.clearLayers();
-        var marker = L.marker(e.latlng, {
-          icon: pinIcon,
-          // title: 'My Marker',
-          // alt: 'My Marker',
-          // riseOnHover: true,
-          draggable: false
-        }).addTo(pinLayerGroup);
+        // //add a marker where we've clicked
+        // pinLayerGroup.clearLayers();
+        // var marker = L.marker(e.latlng, {
+        //   icon: pinIcon,
+        //   // title: 'My Marker',
+        //   // alt: 'My Marker',
+        //   // riseOnHover: true,
+        //   draggable: false
+        // }).addTo(pinLayerGroup);
 
       });
     }
@@ -1668,6 +1677,7 @@
       if (Areas && ("features" in Areas)) {
         // If checked, add the polygons
         if (document.getElementById("areas").checked) {
+          active_chart_source = 3;  //set the polygons to the active chart source
           L.geoJson(Areas, {
             pane: 'overlays',
             style: {
@@ -1678,7 +1688,8 @@
             },
             onEachFeature: function (feature, layer) {
               layer.on('click', function (e) { // Correct method to attach click event
-                drawWaterBalanceChart(scenarioIdx, feature.properties.ID);
+                ActiveID = feature.properties.ID;
+                drawWaterBalanceChart(ActiveID);
               });
             }
           }).addTo(featureLayerGroup);

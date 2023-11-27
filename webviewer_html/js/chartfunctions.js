@@ -285,7 +285,8 @@ function drawChart1D(ModelID, objectType, parameterIdx) {
   }
 }
 
-function drawWaterBalanceChart(scenarioIdx, AreaID) {
+function drawWaterBalanceChart(AreaID) {
+  console.log("Drawing waterbalance for scenario ", scenarioIdx, " and area ", AreaID);
 
   if (AreaID) {
     const scenario = Waterbalance.scenarios[scenarioIdx];
@@ -327,8 +328,7 @@ function drawWaterBalanceChart(scenarioIdx, AreaID) {
     for (let i = 0; i < timesteps.length; i++) {
       const row = [timesteps[i]];
 
-
-      // Consistent series addition for inflow and outflow
+      // Consistent series addition for inflow
       area.links.forEach(link => {
         const inflowValue = hasNonZeroInflow(link) ? (link.in[i] || 0) : null;
         if (hasNonZeroInflow(link)) {
@@ -336,7 +336,7 @@ function drawWaterBalanceChart(scenarioIdx, AreaID) {
         }
       });
 
-      // Consistent series addition for inflow and outflow
+      // Consistent series addition for outflow
       area.links.forEach(link => {
         const outflowValue = hasNonZeroOutflow(link) ? (link.out[i] || 0) : null;
         if (hasNonZeroOutflow(link)) {
@@ -883,20 +883,20 @@ function UpdateChartElements() {
 function StyleTable(){
   //show or hide the table with statistics, based on whether the checkbox for areas is checked
   let tablediv = document.getElementById("stats_div");
-  if (document.getElementById("areas").checked){
-    tablediv.style.display = 'block';
-      } else {
+  if (active_chart_source === 3){
     tablediv.style.display = 'none';
+  } else {
+    tablediv.style.display = 'block';
   }
 }
 
 function StyleBasinButtons(active_basin_id, active_basin_parameter) {
   //console.log("active basin id is ", active_basin_id);
   let basinsdiv = document.getElementById("basincontainer");
-  if (!active_basin_id) {
-    basinsdiv.style.display = 'none';
-  } else {
+  if (active_chart_source === 1) {
     basinsdiv.style.display = 'block';
+  } else {
+    basinsdiv.style.display = 'none';
   }
 
   let levelbutton = document.getElementById("levelbutton");
