@@ -285,11 +285,126 @@ function drawChart1D(ModelID, objectType, parameterIdx) {
   }
 }
 
+function drawWaterBalanceChart(scenarioIdx, AreaID) {
+
+  if (AreaID) {
+    const scenario = Waterbalance.scenarios[scenarioIdx];
+    if (!scenario) {
+      alert("Scenario not found");
+      return;
+    }
+
+    const area = scenario.balance.find(a => a.AreaID === AreaID);
+    if (!area) {
+      alert("Area not found");
+      return;
+    }
+
+    const data = new google.visualization.DataTable();
+    data.addColumn('number', 'Time');
+
+    // Function to check if a link has non-zero inflow or outflow data
+    const hasNonZeroInflow = (link) => link.in.some(value => value !== 0);
+    const hasNonZeroOutflow = (link) => link.out.some(value => value !== 0);
+
+
+    // Add columns conditionally for inflow
+    area.links.forEach(link => {
+      if (hasNonZeroInflow(link)) {
+        data.addColumn('number', 'Inflow (Link ' + link.ID + ')');
+      }
+    });
+
+    // Add columns conditionally for outflow
+    area.links.forEach(link => {
+      if (hasNonZeroOutflow(link)) {
+        data.addColumn('number', 'Outflow (Link ' + link.ID + ')');
+      }
+    });
+
+
+    const timesteps = scenario.timesteps;
+    for (let i = 0; i < timesteps.length; i++) {
+      const row = [timesteps[i]];
+
+      // Consistent series addition for inflow and outflow
+      area.links.forEach(link => {
+        const inflowValue = hasNonZeroInflow(link) ? (link.in[i] || 0) : null;
+        const outflowValue = hasNonZeroOutflow(link) ? (link.out[i] || 0) : null;
+        if (hasNonZeroInflow(link)) {
+          row.push(inflowValue);
+        }
+        if (hasNonZeroOutflow(link)) {
+          row.push(outflowValue);
+        }
+      });
+
+      data.addRow(row);
+    }
+
+    // Define chart options
+    const options = {
+      title: 'Water Balance for Area ' + AreaID,
+      isStacked: true,
+      hAxis: { title: 'Time (s)' },
+      vAxis: { title: 'Volume' },
+      legend: { position: 'bottom' }, // Change legend position here
+      series: {}
+    };
+
+
+    let seriesCount = 0;
+    area.links.forEach((link, index) => {
+      if (hasNonZeroInflow(link)) {
+        // Inflow series
+        options.series[seriesCount] = {
+          color: getColor(index),
+          labelInLegend: 'Inflow Link ' + link.ID,
+          areaOpacity: 0.5 // Set as needed
+        };
+        seriesCount++;
+      }
+      if (hasNonZeroOutflow(link)) {
+        // Outflow series
+        options.series[seriesCount] = {
+          color: getColor(index),
+          labelInLegend: 'Outflow Link ' + link.ID,
+          //visibleInLegend: false, // Hide outflow from legend if desired
+          areaOpacity: 0.5 // Set as needed
+        };
+        seriesCount++;
+      }
+    });
+
+
+    // Convert the DataTable to a JSON string
+    var jsonData = data.toJSON();
+
+    // Log the JSON string to the console
+    console.log(jsonData);
+
+    const chart = new google.visualization.AreaChart(document.getElementById('chart_div'));
+    chart.draw(data, options);
+  } else {
+    alert("AreaID is missing");
+  }
+}
+
+// Helper function to get distinct colors for each link
+function getColor(index, isInflow) {
+  const colors = ['#4daf4a', '#377eb8', '#ff7f00', '#984ea3', '#e41a1c']; // Add more colors as needed
+  return colors[index % colors.length];
+}
+
+
+// Function to get alternate color for outflow
+function getAlternateColor(index) {
+  const altColors = ['#a6cee3', '#b2df8a', '#fb9a99', '#fdbf6f', '#cab2d6']; // Different set of colors
+  return altColors[index % altColors.length];
+}
 
 function drawChart1DObject(ModelID, objectType, parameterIdx) {
   if (ModelID) {
-
-    console.log("in function drawChart1DObject");
 
     //prepare a Google datatable for our chart
     let data = new google.visualization.DataTable();
@@ -752,8 +867,13 @@ function StyleObservationpointsButtons(active_observationpoint_id, active_observ
   }
 }
 
+function UpdateChartElements() {
+  StyleBasinButtons(active_basin_id, active_basin_parameter);
+  //StyleDambreakButtons(active_dambreak_id, active_dambreak_parameter);
+}
 
 function StyleBasinButtons(active_basin_id, active_basin_parameter) {
+  //console.log("active basin id is ", active_basin_id);
   let basinsdiv = document.getElementById("basincontainer");
   if (!active_basin_id) {
     basinsdiv.style.display = 'none';
@@ -778,7 +898,6 @@ function StyleBasinButtons(active_basin_id, active_basin_parameter) {
     storagebutton.style.boxShadow = '2px 3px 2px #999999';
   }
 }
-
 
 function StyleDambreakButtons(active_dambreak_id, active_dambreak_parameter) {
   let dambreakdiv = document.getElementById("dambreakcontainer");

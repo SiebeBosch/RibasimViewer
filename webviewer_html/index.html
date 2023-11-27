@@ -31,6 +31,7 @@
   <script type="text/javascript" src="js/Colorgradients.js"></script>
   <script type="text/javascript" src="js/subcatchments.js"></script>
   <script type="text/javascript" src="js/areas.js"></script>
+  <script type="text/javascript" src="js/waterbalance.js"></script>
   <script type="text/javascript" src="js/generalfunctions.js"></script>
   <script type="text/javascript" src="js/meshfunctions.js"></script>
   <script type="text/javascript" src="js/chartfunctions.js"></script>
@@ -63,6 +64,14 @@
 
   <script type="text/javascript">
 
+    //parameters to keep track of the active dambreak id and parameter
+    let active_breach_id;        
+    let active_dambreak_parameter = "dambreak_crest_width";
+
+    //parameters to keep track of the active basin id and parameter
+    let active_basin_id;
+    let active_basin_parameter = "level";
+
     // Load the Visualization API and the corechart package.
     // Set a callback to run when the Google Visualization API is loaded.
     google.charts.load('current', { 'packages': ['corechart'] });
@@ -89,13 +98,6 @@
     var calculationpointsChecked = Settings.calculationpointsChecked;
     var structuresChecked = Settings.structuresChecked;
 
-    //parameters to keep track of the active dambreak id and parameter
-    let active_breach_id;        
-    let active_dambreak_parameter = "dambreak_crest_width";
-
-    //parameters to keep track of the active basin id and parameter
-    let active_basin_id;
-    let active_basin_parameter = "level";
 
     //parameters to keep track of the active observation point id and parameter
     let active_observationpoint_id;
@@ -403,6 +405,8 @@
 
   <script>
 
+    UpdateChartElements();
+
     //1D FLOW NODES
     document.getElementById("observationpoints").checked = observationpointsChecked;
     document.getElementById("calculationpoints").checked = calculationpointsChecked;
@@ -444,7 +448,7 @@
       $("#divIWRMFlowBoundary").hide();
       $("#divIWRMTerminal").hide();
     } else {
-		console.log("Hiding unavailable checkboxes");
+		//console.log("Hiding unavailable checkboxes");
 		hideUnavailableRibasimCheckboxes();
 	}
 
@@ -482,12 +486,12 @@
 
 		// Iterate over each checkbox and hide those whose node type is not available
 		for (let checkboxId in checkboxIdToNodeType) {
-			console.log("checkboxId is ", checkboxId);
+			//console.log("checkboxId is ", checkboxId);
 			if (!availableNodeTypes.has(checkboxIdToNodeType[checkboxId])) {
-				console.log("No nodes found of type ", checkboxIdToNodeType[checkboxId]);
+				//console.log("No nodes found of type ", checkboxIdToNodeType[checkboxId]);
 				document.getElementById(checkboxId).style.display = 'none'; // Directly hide the div
 			} else {
-				console.log("Nodes found of type", checkboxIdToNodeType[checkboxId]);
+				//console.log("Nodes found of type", checkboxIdToNodeType[checkboxId]);
 			}
 		}
 	}
@@ -1670,8 +1674,7 @@
         },
         onEachFeature: function (feature, layer) {
           layer.on('click', function (e) { // Correct method to attach click event
-            alert("clicked on area");
-            console.log(e);
+            drawWaterBalanceChart(scenarioIdx, feature.properties.ID);
           });
         }
       }).addTo(featureLayerGroup);
