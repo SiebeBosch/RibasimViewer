@@ -327,13 +327,18 @@ function drawWaterBalanceChart(scenarioIdx, AreaID) {
     for (let i = 0; i < timesteps.length; i++) {
       const row = [timesteps[i]];
 
+
       // Consistent series addition for inflow and outflow
       area.links.forEach(link => {
         const inflowValue = hasNonZeroInflow(link) ? (link.in[i] || 0) : null;
-        const outflowValue = hasNonZeroOutflow(link) ? (link.out[i] || 0) : null;
         if (hasNonZeroInflow(link)) {
           row.push(inflowValue);
         }
+      });
+
+      // Consistent series addition for inflow and outflow
+      area.links.forEach(link => {
+        const outflowValue = hasNonZeroOutflow(link) ? (link.out[i] || 0) : null;
         if (hasNonZeroOutflow(link)) {
           row.push(outflowValue);
         }
@@ -870,6 +875,19 @@ function StyleObservationpointsButtons(active_observationpoint_id, active_observ
 function UpdateChartElements() {
   StyleBasinButtons(active_basin_id, active_basin_parameter);
   //StyleDambreakButtons(active_dambreak_id, active_dambreak_parameter);
+
+  StyleTable();
+
+}
+
+function StyleTable(){
+  //show or hide the table with statistics, based on whether the checkbox for areas is checked
+  let tablediv = document.getElementById("stats_div");
+  if (document.getElementById("areas").checked){
+    tablediv.style.display = 'block';
+      } else {
+    tablediv.style.display = 'none';
+  }
 }
 
 function StyleBasinButtons(active_basin_id, active_basin_parameter) {

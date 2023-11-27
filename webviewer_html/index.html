@@ -65,7 +65,7 @@
   <script type="text/javascript">
 
     //parameters to keep track of the active dambreak id and parameter
-    let active_breach_id;        
+    let active_breach_id;
     let active_dambreak_parameter = "dambreak_crest_width";
 
     //parameters to keep track of the active basin id and parameter
@@ -184,8 +184,8 @@
     <hr class="divider">
     <div class="radiogroup">
       <div class="sectionheader">Ribasim</div>
-      <div class="radiobutton"><input type="checkbox" id="reaches" checked="true"
-          onclick="plotReaches()">edges</input></div>
+      <div class="radiobutton"><input type="checkbox" id="reaches" checked="true" onclick="plotReaches()">edges</input>
+      </div>
       <div class="radiobutton" id="divIWRMBasins"><input type="checkbox" id="IWRMBasins" onclick="plot1DObjects()"
           checked>Basins</input></div>
       <div class="radiobutton" id="divIWRMManningResistance"><input type="checkbox" id="IWRMManningResistance"
@@ -245,8 +245,10 @@
     <hr class="divider">
     <div class="radiogroup">
       <div class="sectionheader">Options</div>
-      <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleChart()">show chart</input></div>
-      <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleSlider()">show slider</input></div>
+      <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleChart()">show
+        chart</input></div>
+      <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleSlider()">show
+        slider</input></div>
     </div>
     <hr class="divider">
     <div class="radiogroup">
@@ -263,7 +265,8 @@
     <div id="chart_title">Chart</div>
     <div id="chart_div">
     </div>
-    <div class="radiobutton"><input type="checkbox" id="xaxistype" value="false" onclick="toggleXAxis()">Relative time</input></div>
+    <div class="radiobutton"><input type="checkbox" id="xaxistype" value="false" onclick="toggleXAxis()">Relative
+      time</input></div>
     <div id="observationpointscontainer">
       <button class="chartbutton" id="hbutton"
         onclick="toggleObservationpointsParameter('observationpoint_waterlevel')">Hoogte</button>
@@ -305,7 +308,7 @@
   </div>
   <div id="legendcontainer">
     <div id="legendtitle">Legend</div>
-	<div id="legendlayeritems" class="legenditems" style="display: none;">
+    <div id="legendlayeritems" class="legenditems" style="display: none;">
       <div id="legendlayer" class="legendunit">Water depth (cm)</div>
       <div id="legenditem">
         <div
@@ -448,9 +451,9 @@
       $("#divIWRMFlowBoundary").hide();
       $("#divIWRMTerminal").hide();
     } else {
-		//console.log("Hiding unavailable checkboxes");
-		hideUnavailableRibasimCheckboxes();
-	}
+      //console.log("Hiding unavailable checkboxes");
+      hideUnavailableRibasimCheckboxes();
+    }
 
     if (!hotspots || !hotspots.features || hotspots.features.length === 0) {
       $("#divhotspots").hide();
@@ -459,42 +462,42 @@
     if (!measurements || !measurements.locations || measurements.locations.length === 0) {
       $("#divdifferencewithmeasurements").hide();
     }
-	
-	
-	
-	function hideUnavailableRibasimCheckboxes() {
-		// Extract all node types from the IWRMNodes object
-		let availableNodeTypes = new Set();
-		for (let feature of IWRMNodes.features) {
-			availableNodeTypes.add(feature.properties.NodeType);
-			//console.log("availableNodeType added ", feature.properties.NodeType);
-		}
 
-		// Define a mapping between checkbox ids and node types
-		const checkboxIdToNodeType = {
-			divIWRMBasins: "Basin",
-			divIWRMManningResistance: "ManningResistance",
-			divIWRMTabulatedRatingCurve: "TabulatedRatingCurve",
-			divIWRMFractionalFlow: "FractionalFlow",
-			divIWRMPump: "Pump",
-			divIWRMLinearResistance: "LinearResistance",
-			divIWRMLevelBoundary: "LevelBoundary",
-			divIWRMFlowBoundary: "FlowBoundary",
-			divIWRMTerminal: "Terminal"
-			// Add more mappings here according to your data
-		};
 
-		// Iterate over each checkbox and hide those whose node type is not available
-		for (let checkboxId in checkboxIdToNodeType) {
-			//console.log("checkboxId is ", checkboxId);
-			if (!availableNodeTypes.has(checkboxIdToNodeType[checkboxId])) {
-				//console.log("No nodes found of type ", checkboxIdToNodeType[checkboxId]);
-				document.getElementById(checkboxId).style.display = 'none'; // Directly hide the div
-			} else {
-				//console.log("Nodes found of type", checkboxIdToNodeType[checkboxId]);
-			}
-		}
-	}
+
+    function hideUnavailableRibasimCheckboxes() {
+      // Extract all node types from the IWRMNodes object
+      let availableNodeTypes = new Set();
+      for (let feature of IWRMNodes.features) {
+        availableNodeTypes.add(feature.properties.NodeType);
+        //console.log("availableNodeType added ", feature.properties.NodeType);
+      }
+
+      // Define a mapping between checkbox ids and node types
+      const checkboxIdToNodeType = {
+        divIWRMBasins: "Basin",
+        divIWRMManningResistance: "ManningResistance",
+        divIWRMTabulatedRatingCurve: "TabulatedRatingCurve",
+        divIWRMFractionalFlow: "FractionalFlow",
+        divIWRMPump: "Pump",
+        divIWRMLinearResistance: "LinearResistance",
+        divIWRMLevelBoundary: "LevelBoundary",
+        divIWRMFlowBoundary: "FlowBoundary",
+        divIWRMTerminal: "Terminal"
+        // Add more mappings here according to your data
+      };
+
+      // Iterate over each checkbox and hide those whose node type is not available
+      for (let checkboxId in checkboxIdToNodeType) {
+        //console.log("checkboxId is ", checkboxId);
+        if (!availableNodeTypes.has(checkboxIdToNodeType[checkboxId])) {
+          //console.log("No nodes found of type ", checkboxIdToNodeType[checkboxId]);
+          document.getElementById(checkboxId).style.display = 'none'; // Directly hide the div
+        } else {
+          //console.log("Nodes found of type", checkboxIdToNodeType[checkboxId]);
+        }
+      }
+    }
 
     divdifferencewithmeasurements
 
@@ -1658,29 +1661,30 @@
     }
 
     function plotAreas() {
-  // Remove all existing layers from our layer group
-  featureLayerGroup.clearLayers();
+      // Remove all existing layers from our layer group
+      featureLayerGroup.clearLayers();
+      UpdateChartElements();
 
-  if (Areas && ("features" in Areas)) {
-    // If checked, add the polygons
-    if (document.getElementById("areas").checked) {
-      L.geoJson(Areas, {
-        pane: 'overlays',
-        style: {
-          interactive: true, // Set interactive to true to enable click events
-          color: "#006400",
-          weight: 1,
-          pane: 'overlays'
-        },
-        onEachFeature: function (feature, layer) {
-          layer.on('click', function (e) { // Correct method to attach click event
-            drawWaterBalanceChart(scenarioIdx, feature.properties.ID);
-          });
-        }
-      }).addTo(featureLayerGroup);
-    };
-  }
-}
+      if (Areas && ("features" in Areas)) {
+        // If checked, add the polygons
+        if (document.getElementById("areas").checked) {
+          L.geoJson(Areas, {
+            pane: 'overlays',
+            style: {
+              interactive: true, // Set interactive to true to enable click events
+              color: "#006400",
+              weight: 1,
+              pane: 'overlays'
+            },
+            onEachFeature: function (feature, layer) {
+              layer.on('click', function (e) { // Correct method to attach click event
+                drawWaterBalanceChart(scenarioIdx, feature.properties.ID);
+              });
+            }
+          }).addTo(featureLayerGroup);
+        };
+      }
+    }
 
     function plot1DObjects() {
 
@@ -1807,8 +1811,8 @@
         drawDambreakChart(active_breach_id, active_dambreak_parameter, getTimestepIndex());
       }
     }
-	
-	function toggleBasinParameter(parameter_name) {
+
+    function toggleBasinParameter(parameter_name) {
       //this function sets the active basin parameter so the corresponding parameter is plotted in the chart
       active_basin_parameter = parameter_name;
       StyleBasinButtons(active_basin_id, active_basin_parameter);
@@ -1818,7 +1822,7 @@
       } else if (active_basin_parameter == 'storage') {
         drawChart1D(active_basin_id, "Basin", 1)
       }
-	}
+    }
 
     function toggleObservationpointsParameter(parameter_name) {
       //this function sets the active dambreak parameter so the corresponding parameter is plotted in the chart
