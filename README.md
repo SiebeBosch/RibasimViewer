@@ -18,6 +18,8 @@ In case the application is populated and launched from within the community edit
 ## Populating the viewer
 Populating the viewer with the topology and results of your Ribasim-project can be done with the Community Edition of [HydroToolbox]([https://www.dropbox.com/scl/fi/y7bnx3ti3fr9530cvnp08/HydroToolboxSetup-2.6.2.0-x64.zip?rlkey=qmu6h9dchj9b9xvsi02bo6gy3&dl=0](https://www.dropbox.com/s/x0fsj3k9gwh8xr4/HydroToolboxSetup-v2.6.3-x64.zip?dl=0) software, version 2.6.3.0 (Hydroconsult, The Netherlands). Currently, HydroToolbox is suitable for postprocessing results of Ribasim version 2023-10.
 
+A set of two sample projects can be found here: [c:\Dropbox\Public\TKI\99.Modelschematisaties.zip](https://www.dropbox.com/scl/fi/72se3d8r4b3vngteb6l06/99.Modelschematisaties.zip?rlkey=iflfba09lq6qbtrgqbz8yvw7t&dl=0)
+
 A brief video demonstration of how to publish Ribasim results in the webviewer can be found [here](https://www.dropbox.com/scl/fi/3g2m82hacxfy7y71suyme/Ribasim_publish_webviewer.mp4?rlkey=nhhe2cq6qicakfliqjgawmeqg&dl=0).
 
 ## Launching the viewer
