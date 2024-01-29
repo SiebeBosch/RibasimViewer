@@ -3,8 +3,7 @@ A universal webviewer for Deltares' RIBASIM projects.
 The webviewer consists solely of HTML, Javascript and CSS, thus making it extremely lightweight and portable. A webserver is NOT necessary.
 Launching the application is simply a matter of double-clicking index.html.
 
-The viewer can be populated with a RIBASIM model topology and simulation results by using the Community Edition of Hydroconsult's HydroToolbox software (first release expected in October 2023).
-
+The viewer can be populated with a RIBASIM model topology and simulation results by using the Community Edition of Hydroconsult's HydroToolbox software.
 ![Alt text](./images/example.png)
 
 ## Requirements
@@ -16,7 +15,7 @@ Request your own token at https://docs.mapbox.com/help/getting-started/access-to
 In case the application is populated and launched from within the community edition of HydroToolbox (Hydroconsult) the required token is included.
 
 ## Populating the viewer
-Populating the viewer with the topology and results of your Ribasim-project can be done with the Community Edition of [HydroToolbox](https://www.dropbox.com/s/x0fsj3k9gwh8xr4/HydroToolboxSetup-v2.6.3-x64.zip?dl=0) software, version 2.6.3.0 (Hydroconsult, The Netherlands). Currently, HydroToolbox is suitable for postprocessing results of Ribasim version 2023-10.
+Populating the viewer with the topology and results of your Ribasim-project can be done with the Community Edition of [HydroToolbox](https://www.dropbox.com/scl/fi/swlhqp1ndfj236e5b2j24/HydroToolboxSetup-2.6.4.0-x64.zip?rlkey=o1ewb7pz6ceocecyjqr4bosa0&dl=0) software, version 2.6.4.0 (Hydroconsult, The Netherlands). Currently, HydroToolbox is suitable for postprocessing results of Ribasim version 2023-10.
 
 A set of two sample projects can be found [here](https://www.dropbox.com/scl/fi/72se3d8r4b3vngteb6l06/99.Modelschematisaties.zip?rlkey=iflfba09lq6qbtrgqbz8yvw7t&dl=0).
 
