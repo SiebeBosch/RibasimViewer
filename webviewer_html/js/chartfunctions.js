@@ -1,5 +1,60 @@
+function populateWaterbalanceTable(ModelID) {
+  if (ModelID) {
+    let table = document.getElementById("stats_table");
+    table.innerHTML = ""; // Clear all existing content
+    var header = table.createTHead();
+    var row = header.insertRow(0);
+    var cell = row.insertCell(0);
+    cell.innerHTML = "<b>Balance item</b>";
+
+    // Set up the header row with scenario names for inflow and outflow
+    var nScenarios = Waterbalance.scenarios.length;
+    for (let i = 0; i < nScenarios; i++) {
+      let scenario = Waterbalance.scenarios[i];
+      let cellIn = row.insertCell(1 + i * 2);
+      cellIn.innerHTML = "<b>" + scenario.scenario + " In (m3/s)</b>";
+      let cellOut = row.insertCell(2 + i * 2);
+      cellOut.innerHTML = "<b>" + scenario.scenario + " Out (m3/s)</b>";
+    }
+
+    // Assuming AreaID is the same as ModelID and that ModelID's balance data is always present
+    let area = Waterbalance.scenarios[0].balance.find(a => a.AreaID === ModelID);
+    if (!area) {
+      alert("Area not found");
+      return;
+    }
+
+    // For each link in the area, insert rows and calculate totals
+    area.links.forEach(link => {
+      let row = table.insertRow();
+      let cell = row.insertCell(0);
+      cell.innerHTML = 'Link ' + link.ID;
+
+      for (let i = 0; i < nScenarios; i++) {
+        let scenario = Waterbalance.scenarios[i];
+        let linkData = scenario.balance.find(a => a.AreaID === ModelID).links.find(l => l.ID === link.ID);
+        
+        // Calculate sums for inflow and outflow
+        let sumIn = linkData.in.reduce((a, b) => a + b, 0);
+        let sumOut = linkData.out.reduce((a, b) => a + b, 0);
+
+        let cellIn = row.insertCell(1 + i * 2);
+        cellIn.innerHTML = sumIn.toFixed(3); // toFixed(3) for 3 decimal places
+        let cellOut = row.insertCell(2 + i * 2);
+        cellOut.innerHTML = sumOut.toFixed(3);
+      }
+    });
+  } else {
+    alert("ModelID is missing");
+  }
+}
+
+
 
 function populateTable1D(ModelID, objectType) {
+
+	console.log("populating statistics table");
+	
   if (ModelID) {
 
     //get the object containing observed data for this object
@@ -285,6 +340,11 @@ function drawChart1D(ModelID, objectType, parameterIdx) {
   }
 }
 
+function updateChartTitle(ChartTitle) {
+    var chartTitleDiv = document.getElementById('chart_title');
+    chartTitleDiv.innerText = ChartTitle; // This will set the text inside the div to the value of AreaID
+}
+
 function drawWaterBalanceChart(AreaID) {
   console.log("Drawing waterbalance for scenario ", scenarioIdx, " and area ", AreaID);
 
@@ -301,98 +361,121 @@ function drawWaterBalanceChart(AreaID) {
       return;
     }
 
-    const data = new google.visualization.DataTable();
-    data.addColumn('number', 'Time');
+    const datain = new google.visualization.DataTable();
+	const dataout = new google.visualization.DataTable();
+    datain.addColumn('number', 'Time');
+    dataout.addColumn('number', 'Time');
 
     // Function to check if a link has non-zero inflow or outflow data
     const hasNonZeroInflow = (link) => link.in.some(value => value !== 0);
     const hasNonZeroOutflow = (link) => link.out.some(value => value !== 0);
 
-
     // Add columns conditionally for inflow
     area.links.forEach(link => {
-      if (hasNonZeroInflow(link)) {
-        data.addColumn('number', 'Inflow (Link ' + link.ID + ')');
-      }
+      datain.addColumn('number', link.ID);
     });
 
     // Add columns conditionally for outflow
     area.links.forEach(link => {
-      if (hasNonZeroOutflow(link)) {
-        data.addColumn('number', 'Outflow (Link ' + link.ID + ')');
-      }
+      dataout.addColumn('number', link.ID);
     });
 
 
     const timesteps = scenario.timesteps;
     for (let i = 0; i < timesteps.length; i++) {
-      const row = [timesteps[i]];
+      const rowin = [timesteps[i]];
+	  const rowout = [timesteps[i]];
 
       // Consistent series addition for inflow
       area.links.forEach(link => {
-        const inflowValue = hasNonZeroInflow(link) ? (link.in[i] || 0) : null;
-        if (hasNonZeroInflow(link)) {
-          row.push(inflowValue);
-        }
+        const inflowValue = link.in[i];
+		console.log("inflow is ", inflowValue);
+		rowin.push(inflowValue);
       });
 
       // Consistent series addition for outflow
       area.links.forEach(link => {
-        const outflowValue = hasNonZeroOutflow(link) ? (link.out[i] || 0) : null;
-        if (hasNonZeroOutflow(link)) {
-          row.push(outflowValue);
-        }
+        const outflowValue = link.out[i];
+		console.log("outflow is ", outflowValue);
+        rowout.push(outflowValue);
       });
 
-      data.addRow(row);
+      datain.addRow(rowin);
+	  dataout.addRow(rowout);
     }
 
     // Define chart options
-    const options = {
-      title: 'Water Balance for Area ' + AreaID,
-      isStacked: true,
-      hAxis: { title: 'Time (s)' },
-      vAxis: { title: 'Volume' },
-      legend: { position: 'bottom' }, // Change legend position here
-      series: {}
-    };
+	updateChartTitle('Water balance for area ' + AreaID);
 
+	// Define chart options for the chartin (inflow chart)
+	const optionsIn = {
+		chartArea: { width: '80%', height: '80%', top: '10%', bottom: '20' }, // Adjust top and bottom as needed
+		isStacked: true,
+		hAxis: { 
+			//title: 'Time (s)', 
+			textPosition: 'none'
+		},
+		vAxis: { title: 'In' },
+		legend: { position: 'none' }, // No legend for inflow chart
+		series: {}
+	};
 
+	// Define chart options for the chartout (outflow chart)
+	const optionsOut = {
+		isStacked: true,
+		chartArea: { width: '80%', height: '80%', top: '20', bottom: '10%' }, // Adjust top and bottom as needed
+		hAxis: { 
+			title: 'Time (s)',
+			textPosition: 'out'
+		},
+		vAxis: {
+			title: 'Out',
+			direction: -1, // This will flip the vertical axis
+			textPosition: 'out' // Adjust text position if needed
+		},		
+		legend: { position: 'bottom' }, // Legend for outflow chart
+		series: {}
+	};
+  
     let seriesCount = 0;
     area.links.forEach((link, index) => {
-      if (hasNonZeroInflow(link)) {
-        // Inflow series
-        options.series[seriesCount] = {
-          color: getColor(index),
-          labelInLegend: 'Inflow Link ' + link.ID,
-          areaOpacity: 0.5 // Set as needed
-        };
-        seriesCount++;
-      }
-      if (hasNonZeroOutflow(link)) {
-        // Outflow series
-        options.series[seriesCount] = {
-          color: getColor(index),
-          labelInLegend: 'Outflow Link ' + link.ID,
-          //visibleInLegend: false, // Hide outflow from legend if desired
-          areaOpacity: 0.5 // Set as needed
-        };
-        seriesCount++;
-      }
+      seriesCount++;
+      optionsIn.series[seriesCount] = {
+        color: getColor(index),
+        labelInLegend: link.ID,
+        areaOpacity: 0.5 // Set as needed
+      };
+      optionsOut.series[seriesCount] = {
+        color: getColor(index),
+        labelInLegend: link.ID,
+        areaOpacity: 0.5 // Set as needed
+      };
     });
+	
+	console.log("series found: ", seriesCount);
 
 
     // Convert the DataTable to a JSON string
-    var jsonData = data.toJSON();
+    var jsonDataIn = datain.toJSON();
+    var jsonDataOut = dataout.toJSON();
 
     // Log the JSON string to the console
-    console.log(jsonData);
+    console.log(jsonDataIn);
+    console.log(jsonDataOut);
 
-    const chart = new google.visualization.AreaChart(document.getElementById('chart_div'));
-    chart.draw(data, options);
+    const chartin = new google.visualization.AreaChart(document.getElementById('chartin_div'));
+    chartin.draw(datain, optionsIn);
+    const chartout = new google.visualization.AreaChart(document.getElementById('chartout_div'));
+    chartout.draw(dataout, optionsOut);
+
+	//finally populate the statistics table
+	populateWaterbalanceTable(AreaID,"waterbalance");
+
   } else {
     alert("AreaID is missing");
   }
+  
+  
 }
 
 // Helper function to get distinct colors for each link

@@ -263,9 +263,10 @@
   <div id="bubble"></div>
   <div class="chartcontainer" id="mychart">
     <div id="chart_title">Chart</div>
-    <div id="chart_div">
-    </div>
-    <div class="radiobutton"><input type="checkbox" id="xaxistype" value="false" onclick="toggleXAxis()">Relative
+	<div id="chart_div"></div>
+	<div id="chartin_div" style="display: none;"></div>
+	<div id="chartout_div" style="display: none;"></div>
+    <div class="radiobutton"  style="display: none;"><input type="checkbox" id="xaxistype" value="false" onclick="toggleXAxis()">Relative
       time</input></div>
     <div id="observationpointscontainer">
       <button class="chartbutton" id="hbutton"
@@ -289,7 +290,7 @@
       <button class="chartbutton" id="levelbutton" onclick="toggleBasinParameter('level')">Level</button>
       <button class="chartbutton" id="storagebutton" onclick="toggleBasinParameter('storage')">Storage</button>
     </div>
-    <div id="stats_div" class="stats_table">
+    <div id="stats_div" class="stats_table" style="display: none;">
       <table id="stats_table" class="stats_table">
         <tr>
           <td>Maximum depth (m)</td>
@@ -557,6 +558,13 @@
     }
 
 
+	// Function to set visibility of chart divs
+	function setChartVisibility(showChart, showChartIn, showChartOut) {
+	  document.getElementById('chart_div').style.display = showChart ? 'block' : 'none';
+	  document.getElementById('chartin_div').style.display = showChartIn ? 'block' : 'none';
+	  document.getElementById('chartout_div').style.display = showChartOut ? 'block' : 'none';
+    }
+
 
     document.querySelector("#timeSlider").max = lastTimestepIdx;
 
@@ -574,23 +582,29 @@
     function updateChart() {
       //this function updates the chart if need be
       console.log("active_chart_source is ", active_chart_source);
+	  
+	  
 
       switch (active_chart_source) {
         case 0:
           //2D
           populateTable2D(ActiveID);
           drawChart2DDepth(ActiveID, getTimestepIndex());
-          break;
+		  setChartVisibility(true, false, false);	
+		  break;
         case 1:
           populateTable1D(ActiveID, activeObjectType);
-          drawChart1D(ActiveID, activeObjectType, 0);
-          break;
+          drawChart1D(ActiveID, activeObjectType,0);
+		  setChartVisibility(true, false, false);	          
+		  break;
         case 2:
           drawDambreakChart(ActiveID, active_dambreak_parameter, getTimestepIndex());
+		  setChartVisibility(true, false, false);	          
           break;
         case 3:
           console.log("Updating waterbalance chart");
           drawWaterBalanceChart(ActiveID);
+		  setChartVisibility(false, true, true);	          
           break;
         default:
       }
@@ -971,6 +985,7 @@
     let observationPointsLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain the 1D calculation points results
     if (Settings.initialChartModule == "1D") {
       observationPointsLayerGroup.on('click', (e) => {
+	  	setChartVisibility(true, false, false);
         ActiveID = e.properties.ID;
         drawChart1DForCoordinate(e.properties.ID);
       });
@@ -979,16 +994,16 @@
     let IWRMNodesLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain the IWRM Nodes
     if (Settings.initialChartModule == "1D") {
       IWRMNodesLayerGroup.on('click', (e) => {
+	  	setChartVisibility(true, false, false);
         ActiveID = e.properties.ID;
         drawChart1DForCoordinate(e.properties.ID);
       });
     }
 
-
-
     let calculationPointsLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain the 1D calculation points results
     if (Settings.initialChartModule == "1D") {
       calculationPointsLayerGroup.on('click', (e) => {
+	  	setChartVisibility(true, false, false);
         drawChart1DForCoordinate(e.properties.ID);
       });
     }
@@ -996,6 +1011,7 @@
     let structuresLayerGroup = window.L.featureGroup().addTo(mymap);  //this group will contain the 1D structures results
     if (Settings.initialChartModule == "1D") {
       structuresLayerGroup.on('click', (e) => {
+	  	setChartVisibility(true, false, false);
         drawChart1DForCoordinate(e.properties.ID);
       });
     }
@@ -1307,6 +1323,7 @@
         });
         item.marker.on('click', (e) => {
           console.log("Basin clicked");
+	  	  setChartVisibility(true, false, false);
           active_chart_source = 1;
           active_breach_id = undefined;
           active_observationpoint_id = undefined;
@@ -1323,6 +1340,7 @@
 
       } else if (item.ObjectType == 'ManningResistance') {
         console.log("drawing IWRM ManningResistance");
+	  	setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1351,6 +1369,7 @@
 
       } else if (item.ObjectType == 'TabulatedRatingCurve') {
         console.log("drawing IWRM TabulatedRatingCurve");
+	  	setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1379,6 +1398,7 @@
 
       } else if (item.ObjectType == 'FractionalFlow') {
         console.log("drawing IWRM FractionalFlow");
+	  	setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1407,6 +1427,7 @@
 
       } else if (item.ObjectType == 'Pump') {
         console.log("drawing IWRM Pump");
+	  	setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1435,6 +1456,7 @@
 
       } else if (item.ObjectType == 'LinearResistance') {
         console.log("drawing IWRM LinearResistance");
+	  	setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1463,6 +1485,7 @@
 
       } else if (item.ObjectType == 'LevelBoundary') {
         console.log("drawing IWRM LevelBoundary");
+	  	setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1491,6 +1514,7 @@
 
       } else if (item.ObjectType == 'FlowBoundary') {
         console.log("drawing IWRM FlowBoundary");
+	  	setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1519,6 +1543,7 @@
 
       } else if (item.ObjectType == 'Terminal') {
         console.log("drawing IWRM Terminal");
+	  	setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1689,6 +1714,7 @@
             onEachFeature: function (feature, layer) {
               layer.on('click', function (e) { // Correct method to attach click event
                 ActiveID = feature.properties.ID;
+				setChartVisibility(false, true, true);
                 drawWaterBalanceChart(ActiveID);
               });
             }
