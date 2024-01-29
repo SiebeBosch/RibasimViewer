@@ -4,7 +4,7 @@
     transform: translateX(0px);
     right:0px;
     top: 0px;
-    height: 100vh; /* Specify a height */
+    /*height: 100vh; /* Specify a height */
     width: 900px; /* 0 width - change this with JavaScript */
     /* position: fixed; Stay in place */
     z-index: 999; /* Stay on top */

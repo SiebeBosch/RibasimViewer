@@ -12,9 +12,9 @@ function populateWaterbalanceTable(ModelID) {
     for (let i = 0; i < nScenarios; i++) {
       let scenario = Waterbalance.scenarios[i];
       let cellIn = row.insertCell(1 + i * 2);
-      cellIn.innerHTML = "<b>" + scenario.scenario + " In (m3/s)</b>";
+      cellIn.innerHTML = "<b>" + scenario.scenario + " In (m3)</b>";
       let cellOut = row.insertCell(2 + i * 2);
-      cellOut.innerHTML = "<b>" + scenario.scenario + " Out (m3/s)</b>";
+      cellOut.innerHTML = "<b>" + scenario.scenario + " Out (m3)</b>";
     }
 
     // Assuming AreaID is the same as ModelID and that ModelID's balance data is always present
@@ -23,12 +23,16 @@ function populateWaterbalanceTable(ModelID) {
       alert("Area not found");
       return;
     }
+	
+	// Initialize arrays to keep track of totals for each scenario
+	let totalIn = new Array(nScenarios).fill(0);	
+	let totalOut = new Array(nScenarios).fill(0);
 
     // For each link in the area, insert rows and calculate totals
     area.links.forEach(link => {
       let row = table.insertRow();
       let cell = row.insertCell(0);
-      cell.innerHTML = 'Link ' + link.ID;
+      cell.innerHTML = link.ID;
 
       for (let i = 0; i < nScenarios; i++) {
         let scenario = Waterbalance.scenarios[i];
@@ -38,12 +42,59 @@ function populateWaterbalanceTable(ModelID) {
         let sumIn = linkData.in.reduce((a, b) => a + b, 0);
         let sumOut = linkData.out.reduce((a, b) => a + b, 0);
 
+		// Add to total sums for the scenario
+		totalIn[i] += sumIn;
+		totalOut[i] += sumOut;
+	
         let cellIn = row.insertCell(1 + i * 2);
-        cellIn.innerHTML = sumIn.toFixed(3); // toFixed(3) for 3 decimal places
+        cellIn.innerHTML = sumIn.toFixed(0); // toFixed(0) for 0 decimal places
         let cellOut = row.insertCell(2 + i * 2);
-        cellOut.innerHTML = sumOut.toFixed(3);
+        cellOut.innerHTML = sumOut.toFixed(0);
       }
-    });
+	  });
+	  
+
+	  // Insert a row for balance errors
+	  let errorRow = table.insertRow();
+	  let errorCell = errorRow.insertCell(0);
+	  errorCell.innerHTML = "<b>Balance Error</b>";
+
+	  // And insert a row for the total
+	  let totalRow = table.insertRow();
+	  let totalCell = totalRow.insertCell(0);
+	  totalCell.innerHTML = "<b>Total</b>";
+	  
+	  for (let i = 0; i < nScenarios; i++) {
+		// Calculate balance error for the scenario
+		let balanceError = totalIn[i] + totalOut[i]; //since totalout is negative we must add up both sides of the balance in order to get the Error
+		let errorIn;
+		let errorOut;
+		
+		if (balanceError < 0) {
+			errorIn = -balanceError;
+			errorOut = 0;
+		} else {
+			errorIn = 0;
+			errorOut = -balanceError;
+		}
+		
+		//calculate and write the balance error to the table
+        let cellIn = errorRow.insertCell(1 + i * 2);
+		cellIn.innerHTML = balanceError < 0 ? `<b>${errorIn.toFixed(0)}</b>` : 0;
+        let cellOut = errorRow.insertCell(2 + i * 2);
+        cellOut.innerHTML = balanceError > 0 ? `<b>${errorOut.toFixed(0)}</b>` : 0;
+
+		//write the totals to the table so the user can see both sides match
+		let totalInCell = totalRow.insertCell(1 + i * 2);
+		totalInCell.innerHTML = `<b>${(totalIn[i] + errorIn).toFixed(0)}</b>`
+		let totalOutCell = totalRow.insertCell(2 + i * 2);
+		totalOutCell.innerHTML = `<b>${(totalOut[i] + errorOut).toFixed(0)}</b>`
+		
+ 	  }
+	
+	
+	
+	  
   } else {
     alert("ModelID is missing");
   }
@@ -413,9 +464,9 @@ function drawWaterBalanceChart(AreaID) {
 		isStacked: true,
 		hAxis: { 
 			//title: 'Time (s)', 
-			textPosition: 'none'
+			//textPosition: 'none'
 		},
-		vAxis: { title: 'In' },
+		vAxis: { title: 'In (m3)' },
 		legend: { position: 'none' }, // No legend for inflow chart
 		series: {}
 	};
@@ -429,8 +480,8 @@ function drawWaterBalanceChart(AreaID) {
 			textPosition: 'out'
 		},
 		vAxis: {
-			title: 'Out',
-			direction: -1, // This will flip the vertical axis
+			title: 'Out (m3)',
+			direction: 1, // This will flip the vertical axis
 			textPosition: 'out' // Adjust text position if needed
 		},		
 		legend: { position: 'bottom' }, // Legend for outflow chart

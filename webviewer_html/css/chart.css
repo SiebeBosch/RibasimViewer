@@ -64,12 +64,16 @@
     width: 550px;
 }
 
+
 .stats_table {
 	font-family: "Helvetica";
 	font-size: medium;
 	color: rgb(70,70,70);
     padding: 20px;
     width:100%;
+    max-height: 380px; /* Set a maximum height */
+    overflow-y: auto; /* Add vertical scrollbar when needed */
+	text-align: left;
 }
 
 
