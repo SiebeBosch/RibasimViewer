@@ -19,7 +19,7 @@ Populating the viewer with the topology and results of your Ribasim-project can 
 
 A set of two sample projects can be found [here](https://www.dropbox.com/scl/fi/72se3d8r4b3vngteb6l06/99.Modelschematisaties.zip?rlkey=iflfba09lq6qbtrgqbz8yvw7t&dl=0).
 
-A brief video demonstration of how to publish Ribasim results in the webviewer can be found [here](https://www.dropbox.com/scl/fi/3g2m82hacxfy7y71suyme/Ribasim_publish_webviewer.mp4?rlkey=nhhe2cq6qicakfliqjgawmeqg&dl=0).
+A brief video demonstration of how to publish Ribasim results in the webviewer can be found [here](https://www.dropbox.com/scl/fi/3g2m82hacxfy7y71suyme/Ribasim_publish_webviewer.mp4?rlkey=nhhe2cq6qicakfliqjgawmeqg&dl=0). Notice that the screens shown in the video  may differ slightly from the latest version of the GUI. 
 
 ## Launching the viewer
 Launching the viewer is simply a matter of double-clicking the index.html file. The application will open in your default internet-browser.
