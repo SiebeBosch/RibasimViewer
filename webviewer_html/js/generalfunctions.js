@@ -308,7 +308,8 @@ function tableRemoveAllRows(table) {
 }
 
 function RoundNumber(value, nDecimals) {
-    return Math.round((value + Number.EPSILON) * Math.pow(10, nDecimals)) / Math.pow(10, nDecimals);
+    let x = Math.round((value + Number.EPSILON) * Math.pow(10, nDecimals)) / Math.pow(10, nDecimals);
+    return  x ? x : "Unknown";
 }
 
 function Point(x, y, round) {

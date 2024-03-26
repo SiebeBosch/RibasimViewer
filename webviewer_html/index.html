@@ -72,6 +72,8 @@
     let active_basin_id;
     let active_basin_parameter = "level";
 
+    let active_backwater_parameter = "discharge";
+
     // Load the Visualization API and the corechart package.
     // Set a callback to run when the Google Visualization API is loaded.
     google.charts.load('current', { 'packages': ['corechart'] });
@@ -184,7 +186,7 @@
     <hr class="divider">
     <div class="radiogroup">
       <div class="sectionheader">Ribasim</div>
-      <div class="radiobutton"><input type="checkbox" id="reaches" checked="true" onclick="plotReaches()">edges</input>
+      <div class="radiobutton"><input type="checkbox" id="reaches" checked="true" onclick="plotReaches()">Edges</input>
       </div>
       <div class="radiobutton" id="divIWRMBasins"><input type="checkbox" id="IWRMBasins" onclick="plot1DObjects()"
           checked>Basins</input></div>
@@ -263,10 +265,12 @@
   <div id="bubble"></div>
   <div class="chartcontainer" id="mychart">
     <div id="chart_title">Chart</div>
-	<div id="chart_div"></div>
-	<div id="chartin_div" style="display: none;"></div>
-	<div id="chartout_div" style="display: none;"></div>
-    <div class="radiobutton"  style="display: none;"><input type="checkbox" id="xaxistype" value="false" onclick="toggleXAxis()">Relative
+    <div id="chart_div"></div>
+    <div id="chart_subtitle">Select a node</div>
+    <div id="chartin_div" style="display: none;"></div>
+    <div id="chartout_div" style="display: none;"></div>
+    <div class="radiobutton" style="display: none;"><input type="checkbox" id="xaxistype" value="false"
+        onclick="toggleXAxis()">Relative
       time</input></div>
     <div id="observationpointscontainer">
       <button class="chartbutton" id="hbutton"
@@ -290,8 +294,12 @@
       <button class="chartbutton" id="levelbutton" onclick="toggleBasinParameter('level')">Level</button>
       <button class="chartbutton" id="storagebutton" onclick="toggleBasinParameter('storage')">Storage</button>
     </div>
+    <div id="backwatercontainer">
+      <button class="chartbutton" id="dischargebutton" onclick="toggleBackwaterParameter('discharge')">Debiet</button>
+      <button class="chartbutton" id="headlossbutton" onclick="toggleBackwaterParameter('headloss')">Verval</button>
+    </div>
     <div id="stats_div" class="stats_table" style="display: none;">
-      <table id="stats_table" class="stats_table">
+      <table id="stats_table" class="stats_table" style="display: none;">
         <tr>
           <td>Maximum depth (m)</td>
           <td id="maxd"></td>
@@ -420,14 +428,14 @@
 
     //RIBASIM NODES
     document.getElementById("IWRMBasins").checked = true;
-    document.getElementById("IWRMManningResistance").checked = true;
-    document.getElementById("IWRMTabulatedRatingCurve").checked = true;
-    document.getElementById("IWRMFractionalFlow").checked = true;
-    document.getElementById("IWRMPump").checked = true;
-    document.getElementById("IWRMLinearResistance").checked = true;
-    document.getElementById("IWRMLevelBoundary").checked = true;
-    document.getElementById("IWRMFlowBoundary").checked = true;
-    document.getElementById("IWRMTerminal").checked = true;
+    document.getElementById("IWRMManningResistance").checked = false;
+    document.getElementById("IWRMTabulatedRatingCurve").checked = false;
+    document.getElementById("IWRMFractionalFlow").checked = false;
+    document.getElementById("IWRMPump").checked = false;
+    document.getElementById("IWRMLinearResistance").checked = false;
+    document.getElementById("IWRMLevelBoundary").checked = false;
+    document.getElementById("IWRMFlowBoundary").checked = false;
+    document.getElementById("IWRMTerminal").checked = false;
 
     // Hide certain GUI elements if no data is available for them anyway
 
@@ -510,7 +518,6 @@
 
     class clsResultsLocation {
       constructor(ID, lat, lon, ObjectType, description, issecondary = false) {
-        console.log("ObjectType is", ObjectType);
         this.ID = ID;
         this.lat = lat;
         this.lon = lon;
@@ -520,49 +527,49 @@
         let markerHtmlStyles = `background-color: blue; border-radius: 50%; height:100%; width:100%;box-shadow: 5px 2px 4px #888888;`;
         this.icon = L.divIcon({ iconSize: 10, className: 'my-div-icon', html: `<div style="${markerHtmlStyles}">&nbsp;</div>` });
         if (ObjectType === 'calculationpoint') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 4, fillColor: "white", stroke: false, color: "transparent", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 4, fillColor: "white", stroke: false, color: "transparent", fillOpacity: 1, draggable: false, icon: this.icon });
         } else if (ObjectType === 'observationpoint') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 4, fillColor: "darkblue", stroke: false, color: "transparent", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 4, fillColor: "darkblue", stroke: false, color: "transparent", fillOpacity: 1, draggable: false, icon: this.icon });
         } else if (ObjectType === 'structure') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 4, fillColor: "green", stroke: true, weight: 10, color: "transparent", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 4, fillColor: "green", stroke: true, weight: 10, color: "transparent", fillOpacity: 1, draggable: false, icon: this.icon });
 
         } else if (ObjectType === 'Basin') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#0000ff", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 8, fillColor: "#0000ff", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
           //} else if (ObjectType === 'ManningResistance') {
           // this.marker = new L.DiamondMarker(this.point, { pane: 'results', radius: 8, fillColor: "#ff0000", weight: 1, color: "black", fillOpacity: 1 });
         } else if (ObjectType === 'ManningResistance') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#ff0000", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 8, fillColor: "#ff0000", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
         } else if (ObjectType === 'TabulatedRatingCurve') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#008000", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 8, fillColor: "#008000", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
         } else if (ObjectType === 'FractionalFlow') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "green", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 8, fillColor: "green", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
         } else if (ObjectType === 'LinearResistance') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#008000", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 8, fillColor: "#008000", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
         } else if (ObjectType === 'LevelBoundary') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#008000", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 8, fillColor: "#008000", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
         } else if (ObjectType === 'FlowBoundary') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#800080", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 8, fillColor: "#800080", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
         } else if (ObjectType === 'Pump') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#808080", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 8, fillColor: "#808080", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
         } else if (ObjectType === 'Terminal') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 8, fillColor: "#800080", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 8, fillColor: "#800080", stroke: true, weight: 1, color: "black", fillOpacity: 1, draggable: false, icon: this.icon });
 
         } else if (ObjectType === 'hotspot') {
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 6, fillColor: "purple", stroke: true, weight: 10, color: "transparent", fillOpacity: 1, draggable: false, icon: this.icon });
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 6, fillColor: "purple", stroke: true, weight: 10, color: "transparent", fillOpacity: 1, draggable: false, icon: this.icon });
         } else if (ObjectType === 'dambreak') {
-          console.log("dambreak ", ID, " is secondary is ", issecondary);
-          this.marker = L.circleMarker(this.point, { pane: 'results', renderer: myRenderer, radius: 6, fillColor: issecondary ? "orange" : "#E74C3C", stroke: false, weight: 2, color: issecondary ? "orange" : "#E74C3C", fillOpacity: 1, draggable: false, icon: this.icon });
+          // console.log("dambreak ", ID, " is secondary is ", issecondary);
+          this.marker = L.circleMarker(this.point, { pane: 'results', radius: 6, fillColor: issecondary ? "orange" : "#E74C3C", stroke: false, weight: 2, color: issecondary ? "orange" : "#E74C3C", fillOpacity: 1, draggable: false, icon: this.icon });
         }
         this.tooltip = '<div class="tooltip">Locatie-ID: ' + ID + "</div>";
       }
     }
 
 
-	// Function to set visibility of chart divs
-	function setChartVisibility(showChart, showChartIn, showChartOut) {
-	  document.getElementById('chart_div').style.display = showChart ? 'block' : 'none';
-	  document.getElementById('chartin_div').style.display = showChartIn ? 'block' : 'none';
-	  document.getElementById('chartout_div').style.display = showChartOut ? 'block' : 'none';
+    // Function to set visibility of chart divs
+    function setChartVisibility(showChart, showChartIn, showChartOut) {
+      document.getElementById('chart_div').style.display = showChart ? 'block' : 'none';
+      document.getElementById('chartin_div').style.display = showChartIn ? 'block' : 'none';
+      document.getElementById('chartout_div').style.display = showChartOut ? 'block' : 'none';
     }
 
 
@@ -581,30 +588,30 @@
 
     function updateChart() {
       //this function updates the chart if need be
-      console.log("active_chart_source is ", active_chart_source);
-	  
-	  
+      // console.log("active_chart_source is ", active_chart_source);
+
+
 
       switch (active_chart_source) {
         case 0:
           //2D
-          populateTable2D(ActiveID);
+          // populateTable2D(ActiveID);
           drawChart2DDepth(ActiveID, getTimestepIndex());
-		  setChartVisibility(true, false, false);	
-		  break;
+          setChartVisibility(true, false, false);
+          break;
         case 1:
           populateTable1D(ActiveID, activeObjectType);
-          drawChart1D(ActiveID, activeObjectType,0);
-		  setChartVisibility(true, false, false);	          
-		  break;
+          drawChart1D(ActiveID, activeObjectType, 0);
+          setChartVisibility(true, false, false);
+          break;
         case 2:
           drawDambreakChart(ActiveID, active_dambreak_parameter, getTimestepIndex());
-		  setChartVisibility(true, false, false);	          
+          setChartVisibility(true, false, false);
           break;
         case 3:
-          console.log("Updating waterbalance chart");
+          // console.log("Updating waterbalance chart");
           drawWaterBalanceChart(ActiveID);
-		  setChartVisibility(false, true, true);	          
+          setChartVisibility(false, true, true);
           break;
         default:
       }
@@ -686,7 +693,7 @@
 
     function redrawSelectedMap(clearPreviousLayers) {
 
-      console.log("current zoomlevel is ", mymap.getZoom());
+      // console.log("current zoomlevel is ", mymap.getZoom());
 
       if (Settings.show2Dresults) {
         if (clearPreviousLayers) { tilesLayerGroup.clearLayers() }; //when switching between results type AND plotting 2D, clear the existing tilemaps
@@ -778,7 +785,11 @@
         plotDepthVectors(depthGradient);
       } else {
         if (MeshResults.scenarios && MeshResults.scenarios.length > 0) {
-          plotDepthTiles(MeshResults.scenarios[scenarioIdx].scenario, maxNativeZoom, getTimestepIndex2D_tile(), opacity);
+          var scenario = MeshResults.scenarios[scenarioIdx];
+
+          if (scenario != undefined) {
+            plotDepthTiles(scenario.scenario, maxNativeZoom, getTimestepIndex2D_tile(), opacity);
+          }
         }
       }
     }
@@ -826,7 +837,7 @@
 
     function plotT20cm() {
       if (viewmode == "vectors") {
-        console.log("plotting time to 20 cm depth not yet supported.")
+        // console.log("plotting time to 20 cm depth not yet supported.")
       } else {
         if (MeshResults.scenarios && MeshResults.scenarios.length > 0) {
           plotT20cmTiles(MeshResults.scenarios[scenarioIdx].scenario, maxNativeZoom, opacity);
@@ -836,7 +847,7 @@
 
     function plotT50cm() {
       if (viewmode == "vectors") {
-        console.log("plotting time to 20 cm depth not yet supported.")
+        // console.log("plotting time to 20 cm depth not yet supported.")
       } else {
         if (MeshResults.scenarios && MeshResults.scenarios.length > 0) {
           plotT50cmTiles(MeshResults.scenarios[scenarioIdx].scenario, maxNativeZoom, opacity);
@@ -980,12 +991,13 @@
     window.L.control.zoom({ position: 'bottomleft' }).addTo(mymap);
     let myRenderer = L.canvas({ padding: 0.5 });
     let backgroundLayerGroup = window.L.featureGroup().addTo(mymap);  //this group will only contain the background layer
-    let featureLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain contextual features such as (sub)catchments
+    let areaLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain the area layer
+    let edgeLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain the edge layer
 
     let observationPointsLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain the 1D calculation points results
     if (Settings.initialChartModule == "1D") {
       observationPointsLayerGroup.on('click', (e) => {
-	  	setChartVisibility(true, false, false);
+        setChartVisibility(true, false, false);
         ActiveID = e.properties.ID;
         drawChart1DForCoordinate(e.properties.ID);
       });
@@ -994,7 +1006,7 @@
     let IWRMNodesLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain the IWRM Nodes
     if (Settings.initialChartModule == "1D") {
       IWRMNodesLayerGroup.on('click', (e) => {
-	  	setChartVisibility(true, false, false);
+        setChartVisibility(true, false, false);
         ActiveID = e.properties.ID;
         drawChart1DForCoordinate(e.properties.ID);
       });
@@ -1003,7 +1015,7 @@
     let calculationPointsLayerGroup = window.L.featureGroup().addTo(mymap);     //this group will contain the 1D calculation points results
     if (Settings.initialChartModule == "1D") {
       calculationPointsLayerGroup.on('click', (e) => {
-	  	setChartVisibility(true, false, false);
+        setChartVisibility(true, false, false);
         drawChart1DForCoordinate(e.properties.ID);
       });
     }
@@ -1011,7 +1023,7 @@
     let structuresLayerGroup = window.L.featureGroup().addTo(mymap);  //this group will contain the 1D structures results
     if (Settings.initialChartModule == "1D") {
       structuresLayerGroup.on('click', (e) => {
-	  	setChartVisibility(true, false, false);
+        setChartVisibility(true, false, false);
         drawChart1DForCoordinate(e.properties.ID);
       });
     }
@@ -1164,7 +1176,7 @@
             dambreaksadded.push(dambreak.id);
             issecondary = dambreaksadded.length > 1
 
-            console.log("added ", dambreak.id, " array now length ", dambreaksadded.length);
+            // console.log("added ", dambreak.id, " array now length ", dambreaksadded.length);
 
             let BreachLocationPointAndMarker = new clsResultsLocation(dambreak.id, dambreak.lat, dambreak.lon, "dambreak", "dambreak", issecondary);
             BreachLocationPointAndMarker.marker.bindTooltip(BreachLocationPointAndMarker.tooltip),
@@ -1216,7 +1228,7 @@
 
     function plotMarkerOfType(item) {
 
-      console.log("plotting marker of type ", item.ObjectType);
+      // console.log("plotting marker of type ", item.ObjectType);
 
       if (item.ObjectType == 'calculationpoint') {
         item.marker.addTo(calculationPointsLayerGroup);
@@ -1307,7 +1319,7 @@
         });
 
       } else if (item.ObjectType == 'Basin') {
-        console.log("drawing IWRM basin");
+        // console.log("drawing IWRM basin");
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1322,8 +1334,9 @@
           item.marker.setStyle({ radius: radius });
         });
         item.marker.on('click', (e) => {
+          // console.log(item);
           console.log("Basin clicked");
-	  	  setChartVisibility(true, false, false);
+          setChartVisibility(true, false, false);
           active_chart_source = 1;
           active_breach_id = undefined;
           active_observationpoint_id = undefined;
@@ -1339,8 +1352,8 @@
         });
 
       } else if (item.ObjectType == 'ManningResistance') {
-        console.log("drawing IWRM ManningResistance");
-	  	setChartVisibility(true, false, false);
+        // console.log("drawing IWRM ManningResistance");
+        setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1355,21 +1368,24 @@
           item.marker.setStyle({ radius: radius });
         });
         item.marker.on('click', (e) => {
-          active_chart_source = 1;
-          active_breach_id = undefined;
-          active_observationpoint_id = undefined;
-          StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
-          StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
-          ActiveID = item.ID;
-          activeObjectType = item.ObjectType;
-          activeParameter = ActiveParameter.WATERLEVEL;
-          populateTable1D(item.ID, item.ObjectType);
-          drawChart1D(item.ID, item.ObjectType, 0);
+            active_chart_source = 1;
+            active_breach_id = undefined;
+            active_observationpoint_id = undefined;
+            active_basin_id = item.ID;
+            StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
+            StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+            StyleBackwaterButtons(active_basin_id, active_backwater_parameter);
+            ActiveID = item.ID;
+            activeObjectType = item.ObjectType;
+            activeParameter = ActiveParameter.WATERLEVEL;
+            populateTable1D(item.ID, item.ObjectType);
+            drawChart1D(item.ID, item.ObjectType, 0);
+            toggleBackwaterParameter('discharge')
         });
 
       } else if (item.ObjectType == 'TabulatedRatingCurve') {
-        console.log("drawing IWRM TabulatedRatingCurve");
-	  	setChartVisibility(true, false, false);
+        // console.log("drawing IWRM TabulatedRatingCurve");
+        setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1387,18 +1403,21 @@
           active_chart_source = 1;
           active_breach_id = undefined;
           active_observationpoint_id = undefined;
+          active_basin_id = item.ID;
           StyleDambreakButtons(active_breach_id, active_dambreak_parameter);
           StyleObservationpointsButtons(active_observationpoint_id, active_observationpoint_parameter);
+          StyleBackwaterButtons(active_basin_id, active_backwater_parameter);
           ActiveID = item.ID;
           activeObjectType = item.ObjectType;
           activeParameter = ActiveParameter.WATERLEVEL;
           populateTable1D(item.ID, item.ObjectType);
           drawChart1D(item.ID, item.ObjectType, 0);
+          toggleBackwaterParameter('discharge')
         });
 
       } else if (item.ObjectType == 'FractionalFlow') {
-        console.log("drawing IWRM FractionalFlow");
-	  	setChartVisibility(true, false, false);
+        // console.log("drawing IWRM FractionalFlow");
+        setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1426,8 +1445,8 @@
         });
 
       } else if (item.ObjectType == 'Pump') {
-        console.log("drawing IWRM Pump");
-	  	setChartVisibility(true, false, false);
+        // console.log("drawing IWRM Pump");
+        setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1455,8 +1474,8 @@
         });
 
       } else if (item.ObjectType == 'LinearResistance') {
-        console.log("drawing IWRM LinearResistance");
-	  	setChartVisibility(true, false, false);
+        // console.log("drawing IWRM LinearResistance");
+        setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1484,8 +1503,8 @@
         });
 
       } else if (item.ObjectType == 'LevelBoundary') {
-        console.log("drawing IWRM LevelBoundary");
-	  	setChartVisibility(true, false, false);
+        // console.log("drawing IWRM LevelBoundary");
+        setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1513,8 +1532,8 @@
         });
 
       } else if (item.ObjectType == 'FlowBoundary') {
-        console.log("drawing IWRM FlowBoundary");
-	  	setChartVisibility(true, false, false);
+        // console.log("drawing IWRM FlowBoundary");
+        setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1542,8 +1561,8 @@
         });
 
       } else if (item.ObjectType == 'Terminal') {
-        console.log("drawing IWRM Terminal");
-	  	setChartVisibility(true, false, false);
+        // console.log("drawing IWRM Terminal");
+        setChartVisibility(true, false, false);
         item.marker.addTo(IWRMNodesLayerGroup);
         item.marker.on('mouseover', (e) => {
           removeMapClickHandler();
@@ -1610,7 +1629,7 @@
           item.marker.setStyle({ radius: radius });
         });
       } else {
-        console.log("Object type not recognized: ", item.ObjectType);
+        // console.log("Object type not recognized: ", item.ObjectType);
       }
     }
 
@@ -1627,7 +1646,7 @@
 
     function plotReaches() {
       //remove all existing layers from our layergroup
-      featureLayerGroup.clearLayers();
+      edgeLayerGroup.clearLayers();
 
       if (Reaches && ("features" in Reaches)) {
         //if checked, add the background reaches
@@ -1640,7 +1659,7 @@
               weight: 2,
               pane: 'overlays'
             }
-          }).addTo(featureLayerGroup);
+          }).addTo(edgeLayerGroup);
         };
       }
 
@@ -1688,7 +1707,7 @@
     }
 
     function initializeResultsLocation(item, ObjectType, index) {
-      console.log("ObjectType initialization for ", ObjectType);
+      // console.log("ObjectType initialization for ", ObjectType);
       let ResultsLocation = new clsResultsLocation(item.properties.ID, item.geometry.coordinates[1], item.geometry.coordinates[0], ObjectType, item.properties.description);
       ResultsLocation.marker.bindTooltip(ResultsLocation.tooltip);
       ResultsLocations.push(ResultsLocation);
@@ -1696,8 +1715,9 @@
 
     function plotAreas() {
       // Remove all existing layers from our layer group
-      featureLayerGroup.clearLayers();
+      areaLayerGroup.clearLayers();
       UpdateChartElements();
+
 
       if (Areas && ("features" in Areas)) {
         // If checked, add the polygons
@@ -1714,13 +1734,17 @@
             onEachFeature: function (feature, layer) {
               layer.on('click', function (e) { // Correct method to attach click event
                 ActiveID = feature.properties.ID;
-				setChartVisibility(false, true, true);
+                setChartVisibility(false, true, true);
                 drawWaterBalanceChart(ActiveID);
               });
             }
-          }).addTo(featureLayerGroup);
+          }).addTo(areaLayerGroup);
         };
       }
+      console.log('setting to none');
+      document.getElementById("stats_div").style.display = 'none';
+      document.getElementById("backwatercontainer").style.display = 'none';
+      document.getElementById("basincontainer").style.display = 'none';
     }
 
     function plot1DObjects() {
@@ -1834,7 +1858,7 @@
     function toggleXAxis() {
       //toggles between the modi where the chart's x axis is expressed in hours w.r.t. breach (relative) or in date/time
       xaxisrelative = !xaxisrelative;
-      console.log("xaxisrelative is now ", xaxisrelative);
+      // console.log("xaxisrelative is now ", xaxisrelative);
       updateChart();
     }
 
@@ -1860,6 +1884,21 @@
         drawChart1D(active_basin_id, "Basin", 1)
       }
     }
+
+    function toggleBackwaterParameter(parameter_name) {
+      //this function sets the active basin parameter so the corresponding parameter is plotted in the chart
+      active_backwater_parameter = parameter_name;
+      StyleBackwaterButtons(active_basin_id, active_backwater_parameter);
+
+      if (active_backwater_parameter == "discharge") {
+        drawChart1D(active_basin_id, activeObjectType, 0)
+        populateTable1D(active_basin_id, activeObjectType, 0);
+      } else if (active_backwater_parameter == 'headloss') {
+        drawChart1D(active_basin_id, activeObjectType, 1)
+        populateTable1D(active_basin_id, activeObjectType, 1);
+      }
+    }
+
 
     function toggleObservationpointsParameter(parameter_name) {
       //this function sets the active dambreak parameter so the corresponding parameter is plotted in the chart

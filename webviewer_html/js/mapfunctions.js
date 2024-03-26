@@ -85,31 +85,31 @@ function plotDepthTiles(scenarioname, maxNativeZoom, tileidx, opacity) {
   //first assign the currently active TileLayerId to be the previous onerror
   prevTileLayerId = activeTileLayerId;  
   tileZIndex ++;	//make sure each next layer is drawn on top of the previous
+  if (tileidx != undefined) {
+    let curLayer = L.tileLayer('tiles/' + scenarioname + '/depth/' + String(tileidx) + '/{z}/{x}/{y}.png', {
+      opacity: opacity,
+      maxNativeZoom: maxNativeZoom,
+      tileSize: Settings.tileSize,
+      tms: false,
+      attribution: 'Generated with HydroToolbox by Hydroconsult'
+    }).addTo(tilesLayerGroup);
+    curLayer.setZIndex(tileZIndex);
+    activeTileLayerId = tilesLayerGroup.getLayerId(curLayer);
 
-  let curLayer = L.tileLayer('tiles/' + scenarioname + '/depth/' + String(tileidx) + '/{z}/{x}/{y}.png', {
-    opacity: opacity,
-    maxNativeZoom: maxNativeZoom,
-    tileSize: Settings.tileSize,
-    tms: false,
-    attribution: 'Generated with HydroToolbox by Hydroconsult'
-  }).addTo(tilesLayerGroup);
-  curLayer.setZIndex(tileZIndex);
-  activeTileLayerId = tilesLayerGroup.getLayerId(curLayer);
+    //make the previous layer transparent
+    fadeOutLayer(prevTileLayerId);
 
-  //make the previous layer transparent
-  fadeOutLayer(prevTileLayerId);
-
-  //here we make sure that only once every x timesteps the old tilemaps are removed from the layergroup. This prevents flickering
-  let nTilemaps = tilesLayerGroup.getLayers().length;
-  if (nTilemaps > 50){
-	//remove all old layers from the layergroup
-	tilesLayerGroup.eachLayer(function (layer) {
-		if (layer._leaflet_id != prevTileLayerId){
-			tilesLayerGroup.removeLayer(layer);
-		}
-	});		  	  
-  }
-  
+    //here we make sure that only once every x timesteps the old tilemaps are removed from the layergroup. This prevents flickering
+    let nTilemaps = tilesLayerGroup.getLayers().length;
+    if (nTilemaps > 50){
+    //remove all old layers from the layergroup
+    tilesLayerGroup.eachLayer(function (layer) {
+      if (layer._leaflet_id != prevTileLayerId){
+        tilesLayerGroup.removeLayer(layer);
+      }
+    });		  	  
+    }
+  } 
 }
 
 

@@ -23,10 +23,10 @@ function populateWaterbalanceTable(ModelID) {
       alert("Area not found");
       return;
     }
-	
-	// Initialize arrays to keep track of totals for each scenario
-	let totalIn = new Array(nScenarios).fill(0);	
-	let totalOut = new Array(nScenarios).fill(0);
+
+    // Initialize arrays to keep track of totals for each scenario
+    let totalIn = new Array(nScenarios).fill(0);
+    let totalOut = new Array(nScenarios).fill(0);
 
     // For each link in the area, insert rows and calculate totals
     area.links.forEach(link => {
@@ -37,64 +37,64 @@ function populateWaterbalanceTable(ModelID) {
       for (let i = 0; i < nScenarios; i++) {
         let scenario = Waterbalance.scenarios[i];
         let linkData = scenario.balance.find(a => a.AreaID === ModelID).links.find(l => l.ID === link.ID);
-        
+
         // Calculate sums for inflow and outflow
         let sumIn = linkData.in.reduce((a, b) => a + b, 0);
         let sumOut = linkData.out.reduce((a, b) => a + b, 0);
 
-		// Add to total sums for the scenario
-		totalIn[i] += sumIn;
-		totalOut[i] += sumOut;
-	
+        // Add to total sums for the scenario
+        totalIn[i] += sumIn;
+        totalOut[i] += sumOut;
+
         let cellIn = row.insertCell(1 + i * 2);
         cellIn.innerHTML = sumIn.toFixed(0); // toFixed(0) for 0 decimal places
         let cellOut = row.insertCell(2 + i * 2);
         cellOut.innerHTML = sumOut.toFixed(0);
       }
-	  });
-	  
+    });
 
-	  // Insert a row for balance errors
-	  let errorRow = table.insertRow();
-	  let errorCell = errorRow.insertCell(0);
-	  errorCell.innerHTML = "<b>Balance Error</b>";
 
-	  // And insert a row for the total
-	  let totalRow = table.insertRow();
-	  let totalCell = totalRow.insertCell(0);
-	  totalCell.innerHTML = "<b>Total</b>";
-	  
-	  for (let i = 0; i < nScenarios; i++) {
-		// Calculate balance error for the scenario
-		let balanceError = totalIn[i] + totalOut[i]; //since totalout is negative we must add up both sides of the balance in order to get the Error
-		let errorIn;
-		let errorOut;
-		
-		if (balanceError < 0) {
-			errorIn = -balanceError;
-			errorOut = 0;
-		} else {
-			errorIn = 0;
-			errorOut = -balanceError;
-		}
-		
-		//calculate and write the balance error to the table
-        let cellIn = errorRow.insertCell(1 + i * 2);
-		cellIn.innerHTML = balanceError < 0 ? `<b>${errorIn.toFixed(0)}</b>` : 0;
-        let cellOut = errorRow.insertCell(2 + i * 2);
-        cellOut.innerHTML = balanceError > 0 ? `<b>${errorOut.toFixed(0)}</b>` : 0;
+    // Insert a row for balance errors
+    let errorRow = table.insertRow();
+    let errorCell = errorRow.insertCell(0);
+    errorCell.innerHTML = "<b>Balance Error</b>";
 
-		//write the totals to the table so the user can see both sides match
-		let totalInCell = totalRow.insertCell(1 + i * 2);
-		totalInCell.innerHTML = `<b>${(totalIn[i] + errorIn).toFixed(0)}</b>`
-		let totalOutCell = totalRow.insertCell(2 + i * 2);
-		totalOutCell.innerHTML = `<b>${(totalOut[i] + errorOut).toFixed(0)}</b>`
-		
- 	  }
-	
-	
-	
-	  
+    // And insert a row for the total
+    let totalRow = table.insertRow();
+    let totalCell = totalRow.insertCell(0);
+    totalCell.innerHTML = "<b>Total</b>";
+
+    for (let i = 0; i < nScenarios; i++) {
+      // Calculate balance error for the scenario
+      let balanceError = totalIn[i] + totalOut[i]; //since totalout is negative we must add up both sides of the balance in order to get the Error
+      let errorIn;
+      let errorOut;
+
+      if (balanceError < 0) {
+        errorIn = -balanceError;
+        errorOut = 0;
+      } else {
+        errorIn = 0;
+        errorOut = -balanceError;
+      }
+
+      //calculate and write the balance error to the table
+      let cellIn = errorRow.insertCell(1 + i * 2);
+      cellIn.innerHTML = balanceError < 0 ? `<b>${errorIn.toFixed(0)}</b>` : 0;
+      let cellOut = errorRow.insertCell(2 + i * 2);
+      cellOut.innerHTML = balanceError > 0 ? `<b>${errorOut.toFixed(0)}</b>` : 0;
+
+      //write the totals to the table so the user can see both sides match
+      let totalInCell = totalRow.insertCell(1 + i * 2);
+      totalInCell.innerHTML = `<b>${(totalIn[i] + errorIn).toFixed(0)}</b>`
+      let totalOutCell = totalRow.insertCell(2 + i * 2);
+      totalOutCell.innerHTML = `<b>${(totalOut[i] + errorOut).toFixed(0)}</b>`
+
+    }
+
+
+    document.getElementById('stats_table').style.display = "block";
+
   } else {
     alert("ModelID is missing");
   }
@@ -102,10 +102,10 @@ function populateWaterbalanceTable(ModelID) {
 
 
 
-function populateTable1D(ModelID, objectType) {
+function populateTable1D(ModelID, objectType, parameterIdx) {
 
-	console.log("populating statistics table");
-	
+  console.log("populating statistics table");
+
   if (ModelID) {
 
     //get the object containing observed data for this object
@@ -126,6 +126,8 @@ function populateTable1D(ModelID, objectType) {
     let nScenarios;
 
     //set the chart's title and populate its statistics section
+    let backwater = parameterIdx == 1 ? "headloss" : "discharge";
+
     switch (objectType) {
       case 'observationpoint':
         nScenarios = Observationpointresults.scenarios.length;
@@ -197,6 +199,42 @@ function populateTable1D(ModelID, objectType) {
           ObsDates = myMeas.h.dates;
           ObsValues = myMeas.h.values;
         }
+        break;
+      case 'ManningResistance':
+        nScenarios = IWRMNodeResults.scenarios.length;
+        console.log("nScenarios is now ", nScenarios);
+        cell = row.insertCell(1);
+        cell.innerHTML = parameterIdx == 1 ? "&#916H.max.sim." : "Q.max.sim.";
+        cell = row.insertCell(2);
+        cell.innerHTML = parameterIdx == 1 ? "&#916H.max.obs." : "Q.max.obs.";
+        cell = row.insertCell(3);
+        cell.innerHTML = parameterIdx == 1 ? "&#916H.max.diff." : "Q.max.diff.";
+        if (myMeas) {
+          ObsMax = Math.max(...myMeas.h.values);
+          ObsDates = myMeas.h.dates;
+          ObsValues = myMeas.h.values;
+        }
+        break;
+      case 'TabulatedRatingCurve':
+        nScenarios = IWRMNodeResults.scenarios.length;
+        console.log("nScenarios is now ", nScenarios);
+        cell = row.insertCell(1);
+        cell.innerHTML = parameterIdx == 1 ? "&#916H.max.sim." : "Q.max.sim.";
+        cell = row.insertCell(2);
+        cell.innerHTML = parameterIdx == 1 ? "&#916H.max.obs." : "Q.max.obs.";
+        cell = row.insertCell(3);
+        cell.innerHTML = parameterIdx == 1 ? "&#916H.max.diff." : "Q.max.diff.";
+        if (myMeas) {
+          ObsMax = Math.max(...myMeas.h.values);
+          ObsDates = myMeas.h.dates;
+          ObsValues = myMeas.h.values;
+        }
+        break;
+      case 'FlowBoundary':
+        // TODO Create function to populate FlowBoundary table
+        break;
+      case 'Terminal':
+        // TODO Create function to populate Terminal table
         break;
       default:
       // code block
@@ -356,8 +394,84 @@ function populateTable1D(ModelID, objectType) {
           }
         }
         break;
+      case 'ManningResistance':
+        for (let scenarioIdx = 0; scenarioIdx < IWRMNodeResults.scenarios.length; scenarioIdx++) {
+
+          let myFeature;
+          let simSeries;  //the simulated timeseries
+          let scenario;   //the simulated scenario
+
+          scenario = IWRMNodeResults.scenarios[scenarioIdx];
+          myFeature = scenario.features.find(x => x.id == ModelID);
+          if (myFeature) {
+            if (backwater == "headloss") {
+              SimMax = Math.max(...myFeature.headloss);
+              simSeries = myFeature.headloss;
+            } else {
+              SimMax = Math.max(...myFeature.discharge);
+              simSeries = myFeature.discharge;
+            }
+          }
+
+          if (myFeature) {
+            row = table.insertRow(1);
+            cell = row.insertCell(0);
+            cell.innerHTML = scenario.scenario;
+            cell = row.insertCell(1);
+            cell.innerHTML = RoundNumber(SimMax, 2);
+            cell = row.insertCell(2);
+            cell.innerHTML = RoundNumber(ObsMax, 2);
+            cell = row.insertCell(3);
+            if (myMeas) {
+              cell.innerHTML = RoundNumber(SimMax - ObsMax, 2);
+            }
+          }
+        }
+        break;
+      case 'TabulatedRatingCurve':
+        for (let scenarioIdx = 0; scenarioIdx < IWRMNodeResults.scenarios.length; scenarioIdx++) {
+
+          let myFeature;
+          let simSeries;  //the simulated timeseries
+          let scenario;   //the simulated scenario
+
+          scenario = IWRMNodeResults.scenarios[scenarioIdx];
+          myFeature = scenario.features.find(x => x.id == ModelID);
+          if (myFeature) {
+            if (backwater == "headloss") {
+              SimMax = Math.max(...myFeature.headloss);
+              simSeries = myFeature.headloss;
+            } else {
+              SimMax = Math.max(...myFeature.discharge);
+              simSeries = myFeature.discharge;
+            }
+          }
+
+          if (myFeature) {
+            row = table.insertRow(1);
+            cell = row.insertCell(0);
+            cell.innerHTML = scenario.scenario;
+            cell = row.insertCell(1);
+            cell.innerHTML = RoundNumber(SimMax, 2);
+            cell = row.insertCell(2);
+            cell.innerHTML = RoundNumber(ObsMax, 2);
+            cell = row.insertCell(3);
+            if (myMeas) {
+              cell.innerHTML = RoundNumber(SimMax - ObsMax, 2);
+            }
+          }
+        }
+        break;
+      case 'FlowBoundary':
+        // TODO Create function to populate FlowBoundary table
+        break;
+      case 'Terminal':
+        // TODO Create function to populate Terminal table
+        break;
       default:
     }
+
+    document.getElementById('stats_table').style.display = "block";
   }
 }
 
@@ -385,6 +499,20 @@ function drawChart1D(ModelID, objectType, parameterIdx) {
         console.log("Drawing chart for basin");
         drawBasinChart(ModelID, parameterIdx, getTimestepIndex());
         break;
+      case 'ManningResistance':
+        console.log("Drawing chart for ManningResistance");
+        drawBackwaterChart(ModelID, parameterIdx, getTimestepIndex());
+        break;
+      case 'TabulatedRatingCurve':
+        console.log("Drawing chart for TabulatedRatingCurve");
+        drawBackwaterChart(ModelID, parameterIdx, getTimestepIndex());
+        break;
+      case 'FlowBoundary':
+        // TODO Create function to draw FlowBoundary chart
+        break;
+      case 'Terminal':
+        // TODO Create function to draw Terminal chart
+        break;
       default:
         break;
     }
@@ -392,8 +520,10 @@ function drawChart1D(ModelID, objectType, parameterIdx) {
 }
 
 function updateChartTitle(ChartTitle) {
-    var chartTitleDiv = document.getElementById('chart_title');
-    chartTitleDiv.innerText = ChartTitle; // This will set the text inside the div to the value of AreaID
+  var chartTitleDiv = document.getElementById('chart_title');
+  chartTitleDiv.innerText = ChartTitle; // This will set the text inside the div to the value of AreaID
+
+  document.getElementById('chart_subtitle').style.display = "none";
 }
 
 function drawWaterBalanceChart(AreaID) {
@@ -413,7 +543,7 @@ function drawWaterBalanceChart(AreaID) {
     }
 
     const datain = new google.visualization.DataTable();
-	const dataout = new google.visualization.DataTable();
+    const dataout = new google.visualization.DataTable();
     datain.addColumn('number', 'Time');
     dataout.addColumn('number', 'Time');
 
@@ -435,59 +565,59 @@ function drawWaterBalanceChart(AreaID) {
     const timesteps = scenario.timesteps;
     for (let i = 0; i < timesteps.length; i++) {
       const rowin = [timesteps[i]];
-	  const rowout = [timesteps[i]];
+      const rowout = [timesteps[i]];
 
       // Consistent series addition for inflow
       area.links.forEach(link => {
         const inflowValue = link.in[i];
-		console.log("inflow is ", inflowValue);
-		rowin.push(inflowValue);
+        console.log("inflow is ", inflowValue);
+        rowin.push(inflowValue);
       });
 
       // Consistent series addition for outflow
       area.links.forEach(link => {
         const outflowValue = link.out[i];
-		console.log("outflow is ", outflowValue);
+        console.log("outflow is ", outflowValue);
         rowout.push(outflowValue);
       });
 
       datain.addRow(rowin);
-	  dataout.addRow(rowout);
+      dataout.addRow(rowout);
     }
 
     // Define chart options
-	updateChartTitle('Water balance for area ' + AreaID);
+    updateChartTitle('Water balance for area ' + AreaID);
 
-	// Define chart options for the chartin (inflow chart)
-	const optionsIn = {
-		chartArea: { width: '80%', height: '80%', top: '10%', bottom: '20' }, // Adjust top and bottom as needed
-		isStacked: true,
-		hAxis: { 
-			//title: 'Time (s)', 
-			//textPosition: 'none'
-		},
-		vAxis: { title: 'In (m3)' },
-		legend: { position: 'none' }, // No legend for inflow chart
-		series: {}
-	};
+    // Define chart options for the chartin (inflow chart)
+    const optionsIn = {
+      chartArea: { width: '80%', height: '80%', top: '10%', bottom: '20' }, // Adjust top and bottom as needed
+      isStacked: true,
+      hAxis: {
+        //title: 'Time (s)', 
+        //textPosition: 'none'
+      },
+      vAxis: { title: 'In (m3)' },
+      legend: { position: 'none' }, // No legend for inflow chart
+      series: {}
+    };
 
-	// Define chart options for the chartout (outflow chart)
-	const optionsOut = {
-		isStacked: true,
-		chartArea: { width: '80%', height: '80%', top: '20', bottom: '10%' }, // Adjust top and bottom as needed
-		hAxis: { 
-			title: 'Time (s)',
-			textPosition: 'out'
-		},
-		vAxis: {
-			title: 'Out (m3)',
-			direction: 1, // This will flip the vertical axis
-			textPosition: 'out' // Adjust text position if needed
-		},		
-		legend: { position: 'bottom' }, // Legend for outflow chart
-		series: {}
-	};
-  
+    // Define chart options for the chartout (outflow chart)
+    const optionsOut = {
+      isStacked: true,
+      chartArea: { width: '80%', height: '80%', top: '20', bottom: '10%' }, // Adjust top and bottom as needed
+      hAxis: {
+        title: 'Time (s)',
+        textPosition: 'out'
+      },
+      vAxis: {
+        title: 'Out (m3)',
+        direction: 1, // This will flip the vertical axis
+        textPosition: 'out' // Adjust text position if needed
+      },
+      legend: { position: 'bottom' }, // Legend for outflow chart
+      series: {}
+    };
+
     let seriesCount = 0;
     area.links.forEach((link, index) => {
       seriesCount++;
@@ -502,8 +632,8 @@ function drawWaterBalanceChart(AreaID) {
         areaOpacity: 0.5 // Set as needed
       };
     });
-	
-	console.log("series found: ", seriesCount);
+
+    console.log("series found: ", seriesCount);
 
 
     // Convert the DataTable to a JSON string
@@ -519,14 +649,14 @@ function drawWaterBalanceChart(AreaID) {
     const chartout = new google.visualization.AreaChart(document.getElementById('chartout_div'));
     chartout.draw(dataout, optionsOut);
 
-	//finally populate the statistics table
-	populateWaterbalanceTable(AreaID,"waterbalance");
-
+    //finally populate the statistics table
+    populateWaterbalanceTable(AreaID, "waterbalance");
+    document.getElementById('stats_table').style.display = "block";
   } else {
     alert("AreaID is missing");
   }
-  
-  
+
+
 }
 
 // Helper function to get distinct colors for each link
@@ -553,6 +683,7 @@ function drawChart1DObject(ModelID, objectType, parameterIdx) {
     //get the object containing observed data for this object
     let myMeas = measurements.locations.find(x => x.ModelID === ModelID);
     let chartTitle = document.getElementById("chart_title");
+    document.getElementById('chart_subtitle').style.display = "none";
     let titleLeader;
     let vAxisTitle;
     let ObsMax;
@@ -1008,25 +1139,64 @@ function StyleObservationpointsButtons(active_observationpoint_id, active_observ
 
 function UpdateChartElements() {
   StyleBasinButtons(active_basin_id, active_basin_parameter);
+  StyleBackwaterButtons(active_basin_id, active_basin_parameter);
   //StyleDambreakButtons(active_dambreak_id, active_dambreak_parameter);
 
   StyleTable();
 
 }
 
-function StyleTable(){
+function StyleTable() {
   //show or hide the table with statistics, based on whether the checkbox for areas is checked
   let tablediv = document.getElementById("stats_div");
-  if (active_chart_source === 3){
+  if (active_chart_source === 3) {
     tablediv.style.display = 'none';
   } else {
     tablediv.style.display = 'block';
   }
 }
 
+function StyleBackwaterButtons(active_basin_id, active_basin_parameter) {
+  //console.log("active basin id is ", active_basin_id);
+  let basinsdiv = document.getElementById("basincontainer");
+  let backwaterdiv = document.getElementById("backwatercontainer");
+
+  basinsdiv.style.display = 'none';
+  document.getElementById("stats_div").style.display = 'block';
+
+  if (active_chart_source === 1) {
+    backwaterdiv.style.display = 'block';
+  } else {
+    backwaterdiv.style.display = 'none';
+  }
+
+  let dischargebutton = document.getElementById("dischargebutton");
+  let headlossbutton = document.getElementById("headlossbutton");
+
+  // //initialize all buttons to no border
+  dischargebutton.style.borderWidth = '0px';
+  dischargebutton.style.boxShadow = '0px 0px #000000 ';
+  headlossbutton.style.borderWidth = '0px';
+  headlossbutton.style.boxShadow = '0px 0px #000000 ';
+
+  if (active_basin_parameter == 'discharge') {
+    dischargebutton.style.borderWidth = '2px';
+    dischargebutton.style.boxShadow = '2px 3px 2px #999999';
+  } else if (active_basin_parameter == 'headloss') {
+    headlossbutton.style.borderWidth = '2px';
+    headlossbutton.style.boxShadow = '2px 3px 2px #999999';
+  }
+}
+
 function StyleBasinButtons(active_basin_id, active_basin_parameter) {
   //console.log("active basin id is ", active_basin_id);
   let basinsdiv = document.getElementById("basincontainer");
+  let backwaterdiv = document.getElementById("backwatercontainer");
+
+
+  backwaterdiv.style.display = 'none';
+  document.getElementById("stats_div").style.display = 'block';
+
   if (active_chart_source === 1) {
     basinsdiv.style.display = 'block';
   } else {
@@ -1143,6 +1313,7 @@ function drawDambreakChart(ID, active_dambreak_parameter, tsidx) {
     header.push({ role: 'annotation', type: 'string' });
 
     let chartTitle = document.getElementById("chart_title");
+    document.getElementById('chart_subtitle').style.display = "none";
     chartTitle.innerText = "Breslocatie " + ID;
     let vAxisTitle = "titel";
     let dates = {};
@@ -1347,6 +1518,8 @@ function drawDambreakChart(ID, active_dambreak_parameter, tsidx) {
     var chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
     chart.draw(google.visualization.arrayToDataTable(arr), options);
 
+    document.getElementById('stats_table').style.display = "block";
+
   }
 }
 
@@ -1370,6 +1543,7 @@ function drawObservationpointChart(ID, parameterIdx, tsidx) {
     header.push({ role: 'annotation', type: 'string' });  //annotation for time breach
 
     let chartTitle = document.getElementById("chart_title");
+    document.getElementById('chart_subtitle').style.display = "none";
     chartTitle.innerText = ID;
     let vAxisTitle = "titel";
     let dates = {};
@@ -1493,7 +1667,7 @@ function drawObservationpointChart(ID, parameterIdx, tsidx) {
           values.push(null);
         }
 
-        console.log("pushing bres");
+        // console.log("pushing bres");
         if (dambreaktsidx >= 0 && i == dambreaktsidx) {
           values.push("bres")
         } else {
@@ -1569,6 +1743,226 @@ function drawObservationpointChart(ID, parameterIdx, tsidx) {
   }
 }
 
+function drawBackwaterChart(ID, parameterIdx, tsidx) {
+
+  console.log("drawing chart", ID, " parameterIdx ", parameterIdx, " tsidx ", tsidx);
+
+  if (ID) {
+
+    //prepare a Google datatable for our chart, create a column for the date and set the chart title and the axis title
+    // let data = new google.visualization.DataTable();
+    let arr = [];
+    let header = [];
+    let values = [];
+
+    let EventT0 = new Date(Settings.SimulationT0);
+    let dambreaktsidx = -1;
+
+    // data.addColumn('date', 'Date');
+    header.push("Date");
+    header.push({ role: 'annotation', type: 'string' });  //annotation for current timestep
+    header.push({ role: 'annotation', type: 'string' });  //annotation for time breach
+
+    let chartTitle = document.getElementById("chart_title");
+    document.getElementById('chart_subtitle').style.display = "none";
+    chartTitle.innerText = ID;
+    let vAxisTitle = "titel";
+    let dates = {};
+
+    if (parameterIdx == 0) {
+      vAxisTitle = "Level (m + AD)";
+    } else if (parameterIdx == 1) {
+      vAxisTitle = "Storage (m3)";
+    }
+
+    // 0 = discharge
+    // 1 = headloss
+
+    //count the number of scenario's wwe have. This will be the number of columns in our datatable
+    nScenarios = IWRMNodeResults.scenarios.length;
+    let nSeries = 0;
+
+    //each scenario gets its own column for the data to be stored in
+    let seriesIdx = -1
+    for (let myScenarioIdx = 0; myScenarioIdx < IWRMNodeResults.scenarios.length; myScenarioIdx++) {
+
+      //find the feature we're dealing with!
+      console.log("Finding feature ", ID);
+      let myFeature = IWRMNodeResults.scenarios[myScenarioIdx].features.find(x => x.id == ID);
+
+      // console.log(myFeature.discharge);
+      // console.log("Feature is ", myFeature);
+
+      if (parameterIdx == 0) {
+        //only plot the currently active scenario because otherwise we have too many lines!
+        seriesIdx = addDateTimeSeries(IWRMNodeResults.scenarios[myScenarioIdx].scenario, "discharge", header, dates, IWRMNodeResults.scenarios[myScenarioIdx].timesteps_second, myFeature.discharge, seriesIdx);
+        nSeries++;
+      } else if (parameterIdx == 1) {
+        seriesIdx = addDateTimeSeries(IWRMNodeResults.scenarios[myScenarioIdx].scenario, "headloss", header, dates, IWRMNodeResults.scenarios[myScenarioIdx].timesteps_second, myFeature.headloss, seriesIdx);
+        nSeries++;
+      }
+    }
+
+    //finally add our observed data
+    let myObserved = measurements.locations.find(x => x.ModelID === ID);
+    if (myObserved) {
+
+      if (parameterIdx == 0 && myObserved.h) {
+        seriesIdx = addObservedSeries(header, dates, myObserved.h.dates, myObserved.h.values, seriesIdx);
+        nSeries++;
+      } else if (parameterIdx == 1 && myObserved.Q) {
+        seriesIdx = addObservedSeries(header, dates, myObserved.Q.dates, myObserved.Q.values, seriesIdx);
+        nSeries++;
+      } else if (parameterIdx == 2 && myObserved.Q) {
+        seriesIdx = addObservedSeries(header, dates, myObserved.Q.dates, myObserved.Q.values, seriesIdx, true);
+        nSeries++;
+      } else {
+        console.log("No observed data found for ", ID);
+      }
+    } else {
+      console.log("No observed data found for ", ID);
+    }
+
+    //add our header to the results array
+    arr.push(header);
+
+    //and add all our data to the results array!
+    let xAxisTitle = "Datum";
+    if (xaxisrelative) {
+
+      //set the starttime of our event so we can calculate the difference in hours
+      xAxisTitle = "Tijd na aanvang simulatie (uren)"
+      if (MeshResults.scenarios[0].DambreakT0Seconds) {
+        xAxisTitle = "Tijd na aanvang bres (uren)"
+        EventT0.setSeconds(EventT0.getSeconds() + MeshResults.scenarios[0].DambreakT0Seconds);
+        dambreaktsidx = GetDambreakTimestepIndex(dates, EventT0);
+      }
+
+      let i = 0;
+      Object.keys(dates).forEach(key => {
+        let myDate = new Date(key);
+        let Hours = getDifferenceBetweenTwoDatesInHours(EventT0, myDate);
+
+        //only plot from two hours before our event
+        if (Hours >= 0) {
+          values = [];
+          values.push(Hours);
+
+          if (i == tsidx) {
+            values.push("nu");
+          } else {
+            values.push(null);
+          }
+
+          if (dambreaktsidx >= 0 && i == dambreaktsidx) {
+            values.push("bres")
+          } else {
+            values.push(null);
+          }
+
+          for (let j = 0; j < nSeries; j++) {
+            values.push(dates[key][j + 1]);
+          }
+          arr.push(values);
+        }
+        i++;
+      });
+
+    } else {
+      let i = 0;
+
+      //set our dambreak timestep index, if present
+      if (MeshResults.scenarios.length > 0 && MeshResults.scenarios[0].DambreakT0Seconds) {
+        EventT0.setSeconds(EventT0.getSeconds() + MeshResults.scenarios[0].DambreakT0Seconds);  //set EventT0 equal to the start of our simulation
+        dambreaktsidx = GetDambreakTimestepIndex(dates, EventT0);
+      }
+
+      Object.keys(dates).forEach(key => {
+        values = [];
+        values.push(new Date(key));
+
+        if (i == tsidx) {
+          values.push("nu");
+        } else {
+          values.push(null);
+        }
+
+        if (dambreaktsidx >= 0 && i == dambreaktsidx) {
+          values.push("bres")
+        } else {
+          values.push(null);
+        }
+
+        for (let j = 0; j < nSeries; j++) {
+          values.push(dates[key][j + 1]);
+        }
+        i++;
+        arr.push(values);
+      });
+    }
+
+    // Set chart options
+    var options = {
+      // 'title': ID,
+      annotations: {
+        stem: {
+          color: '#097138'
+        },
+        style: 'line'
+      },
+      legend: {
+        position: 'right',
+        textStyle: {
+          fontName: 'Helvetica',
+          fontSize: 14,
+        }
+      },
+      chartArea: {
+        right: 200,   // set this to adjust the legend width
+        left: 60,     // set this eventually, to adjust the left margin
+      },
+      'width': 600,
+      'height': 350,
+      vAxis: {
+        title: vAxisTitle,
+        textStyle: {
+          fontName: 'Helvetica',
+          fontSize: 14,
+        },
+        titleTextStyle: {
+          fontName: 'Helvetica',
+          fontSize: 16,
+        }
+      },
+      hAxis: {
+        title: xAxisTitle,
+        textStyle: {
+          fontName: 'Helvetica',
+          fontSize: 14,
+        },
+        titleTextStyle: {
+          fontName: 'Helvetica',
+          fontSize: 16,
+        }
+        // viewWindow: {
+        //   min: 0
+        // }
+      },
+      seriesType: 'line',
+      // series: { 0: { type: 'scatter', pointSize: 1 } },
+      // series: {1: {type: 'line'}},
+    };
+
+    console.log("plotting now");
+
+    // Instantiate and draw our chart, passing in some options.
+    var chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
+    console.log(arr);
+    chart.draw(google.visualization.arrayToDataTable(arr), options);
+
+  }
+}
+
 
 function drawBasinChart(ID, parameterIdx, tsidx) {
 
@@ -1591,6 +1985,7 @@ function drawBasinChart(ID, parameterIdx, tsidx) {
     header.push({ role: 'annotation', type: 'string' });  //annotation for time breach
 
     let chartTitle = document.getElementById("chart_title");
+    document.getElementById('chart_subtitle').style.display = "none";
     chartTitle.innerText = ID;
     let vAxisTitle = "titel";
     let dates = {};
@@ -1806,6 +2201,7 @@ function drawStructureChart(ID, parameter, tsidx) {
     header.push({ role: 'annotation', type: 'string' });  //annotation for time breach
 
     let chartTitle = document.getElementById("chart_title");
+    document.getElementById('chart_subtitle').style.display = "none";
     chartTitle.innerText = ID;
     let vAxisTitle = "titel";
     let dates = {};
@@ -2021,6 +2417,7 @@ function drawChart2DDepth(ID, tsidx) {
     header.push({ role: 'annotation', type: 'string' });
 
     let chartTitle = document.getElementById("chart_title");
+    document.getElementById('chart_subtitle').style.display = "none";
     chartTitle.innerText = "Overstromingsdiepte";
     let vAxisTitle = "Waterdiepte (m)";
 
@@ -2182,7 +2579,6 @@ function drawChart2DDepth(ID, tsidx) {
 
 
 function addDateTimeSeries(scenarioName, parameter, header, dates, timesteps_second, values, seriesIdx, multiplier = 1, cumulative = false) {
-  console.log("cumulative is ", cumulative);
   seriesIdx++;
   header.push(scenarioName + ' ' + parameter);
 
@@ -2210,6 +2606,7 @@ function addDateTimeSeries(scenarioName, parameter, header, dates, timesteps_sec
 
     //so first look up the corresponding index for the given timestep in our timeseries
     let series_tsindex = timesteps_second.indexOf(Settings.timesteps_second[tsidx]);
+
 
     if (series_tsindex >= 0) {
       //yes. our series actually contains the exact timestep from the settings.timesteps_second array
@@ -2256,7 +2653,7 @@ function addDateTimeSeries(scenarioName, parameter, header, dates, timesteps_sec
       } else {
         for (let j = timesteps_second.length - 1; j >= 0; j--) {
           if (timesteps_second[j] <= Settings.timesteps_second[tsidx]) {
-            dates[curDateStr][seriesIdx + 1] = multiplier * values[j];   //set the value for this scenario and timestep in our dictionary
+            dates[curDateStr][seriesIdx + 1] = multiplier * values[tsidx];   //set the value for this scenario and timestep in our dictionary
             break;
           }
         }

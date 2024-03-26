@@ -46,6 +46,16 @@
     justify-content: center;
 }
 
+#chart_subtitle {
+	font-family: "Helvetica";
+    color: rgb(70,70,70);
+    font-size: large;
+    margin: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 #chart {
     position: relative;
     top:10px;
