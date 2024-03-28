@@ -1770,9 +1770,9 @@ function drawBackwaterChart(ID, parameterIdx, tsidx) {
     let dates = {};
 
     if (parameterIdx == 0) {
-      vAxisTitle = "Level (m + AD)";
+      vAxisTitle = "Debiet (m³/s)";
     } else if (parameterIdx == 1) {
-      vAxisTitle = "Storage (m3)";
+      vAxisTitle = "Verval (m)";
     }
 
     // 0 = discharge

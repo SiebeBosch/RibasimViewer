@@ -4,6 +4,7 @@
 <head>
   <!-- copyright 2020, Siebe Bosch -->
   <title>The Flooding webviewer</title>
+  <meta charset="UTF-8">
   <!-- <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
     integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
     crossorigin="" /> -->
@@ -984,9 +985,11 @@
     mymap.createPane('mesh');
     mymap.createPane('overlays');
     mymap.createPane('results');
+    mymap.createPane('tooltipPane');
     // mymap.getPane('mesh').style.zIndex = 650;
     mymap.getPane('overlays').style.zIndex = 651;
     mymap.getPane('results').style.zIndex = 652;
+    mymap.getPane('tooltipPane').style.zIndex = 800; // Ensure higher than the highest custom pane
 
     window.L.control.zoom({ position: 'bottomleft' }).addTo(mymap);
     let myRenderer = L.canvas({ padding: 0.5 });
@@ -1179,7 +1182,7 @@
             // console.log("added ", dambreak.id, " array now length ", dambreaksadded.length);
 
             let BreachLocationPointAndMarker = new clsResultsLocation(dambreak.id, dambreak.lat, dambreak.lon, "dambreak", "dambreak", issecondary);
-            BreachLocationPointAndMarker.marker.bindTooltip(BreachLocationPointAndMarker.tooltip),
+            BreachLocationPointAndMarker.marker.bindTooltip(BreachLocationPointAndMarker.tooltip, { pane: 'tooltipPane' }),
               BreachLocationPointsAndMarkers.push(BreachLocationPointAndMarker);
 
             //also add our dambreak line (the path along the dike that is allowed to breach)
@@ -1709,7 +1712,7 @@
     function initializeResultsLocation(item, ObjectType, index) {
       // console.log("ObjectType initialization for ", ObjectType);
       let ResultsLocation = new clsResultsLocation(item.properties.ID, item.geometry.coordinates[1], item.geometry.coordinates[0], ObjectType, item.properties.description);
-      ResultsLocation.marker.bindTooltip(ResultsLocation.tooltip);
+      ResultsLocation.marker.bindTooltip(ResultsLocation.tooltip, { pane: 'tooltipPane' });
       ResultsLocations.push(ResultsLocation);
     }
 
@@ -1785,7 +1788,7 @@
         //depending on the ObjectType will we retrieve data to show in the tooltip
         if (item.ObjectType === 'hotspot') {
           let tooltip = '<div class="tooltip">Hotspot ID: ' + item.ID + "<br>Omschrijving: " + item.description + "</div>";
-          item.marker.bindTooltip(tooltip);
+          item.marker.bindTooltip(tooltip, { pane: 'tooltipPane' });
         } else {
           //get the Alias and ID for the corresponding measurement location 
           let Alias = GetMeasAliasFromModelID(item.ID);
@@ -1814,10 +1817,10 @@
 
           if (Alias && ID) {
             let tooltip = '<div class="tooltip">Meetlocatie: ' + ID + '<br>Alias: ' + Alias + '<br>Knoop-ID: ' + item.ID + "<br>" + "Maximum - meetwaarde: " + RoundNumber(hdiff, 2) + "</div>";
-            item.marker.bindTooltip(tooltip);
+            item.marker.bindTooltip(tooltip, { pane: 'tooltipPane' });
           } else {
             let tooltip = '<div class="tooltip">Locatie-ID: ' + item.ID + "<br>" + "Maximum - meetwaarde: " + RoundNumber(hdiff, 2) + "</div>";
-            item.marker.bindTooltip(tooltip);
+            item.marker.bindTooltip(tooltip, { pane: 'tooltipPane' });
           }
         }
       })
@@ -1842,7 +1845,7 @@
     function onEachFeature(feature, layer) {
       if (feature.properties && feature.properties.comment) {
         //layer.bindPopup(feature.properties.comment);
-        layer.bindTooltip(feature.properties.comment);
+        layer.bindTooltip(feature.properties.comment, { pane: 'tooltipPane' });
       }
     }
 
