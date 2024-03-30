@@ -499,6 +499,10 @@ function drawChart1D(ModelID, objectType, parameterIdx) {
         console.log("Drawing chart for basin");
         drawBasinChart(ModelID, parameterIdx, getTimestepIndex());
         break;
+      case 'FlowBoundary':
+        console.log("Drawing chart for flow boundary");
+        drawBoundaryChart(ModelID, parameterIdx, getTimestepIndex());
+        break;
       case 'ManningResistance':
         console.log("Drawing chart for ManningResistance");
         drawBackwaterChart(ModelID, parameterIdx, getTimestepIndex());
@@ -1078,7 +1082,7 @@ function drawChart1DObject(ModelID, objectType, parameterIdx) {
         }
       },
       hAxis: {
-        title: 'Datum',
+        title: 'Date',
         textStyle: {
           fontName: 'Helvetica',
           fontSize: 14,
@@ -1306,7 +1310,7 @@ function drawDambreakChart(ID, active_dambreak_parameter, tsidx) {
     let arr = [];
     let header = [];
     let values = [];
-    let xAxisTitle = "Datum";
+    let xAxisTitle = "Date";
 
     // data.addColumn('date', 'Date');
     header.push("Date");
@@ -1605,7 +1609,7 @@ function drawObservationpointChart(ID, parameterIdx, tsidx) {
     arr.push(header);
 
     //and add all our data to the results array!
-    let xAxisTitle = "Datum";
+    let xAxisTitle = "Date";
     if (xaxisrelative) {
 
       //set the starttime of our event so we can calculate the difference in hours
@@ -1827,7 +1831,7 @@ function drawBackwaterChart(ID, parameterIdx, tsidx) {
     arr.push(header);
 
     //and add all our data to the results array!
-    let xAxisTitle = "Datum";
+    let xAxisTitle = "Date";
     if (xaxisrelative) {
 
       //set the starttime of our event so we can calculate the difference in hours
@@ -2043,7 +2047,7 @@ function drawBasinChart(ID, parameterIdx, tsidx) {
     arr.push(header);
 
     //and add all our data to the results array!
-    let xAxisTitle = "Datum";
+    let xAxisTitle = "Date";
     if (xaxisrelative) {
 
       //set the starttime of our event so we can calculate the difference in hours
@@ -2182,6 +2186,222 @@ function drawBasinChart(ID, parameterIdx, tsidx) {
 }
 
 
+function drawBoundaryChart(ID, parameterIdx, tsidx) {
+
+  console.log("drawing chart for boundary ", ID, " parameterIdx ", parameterIdx, " tsidx ", tsidx);
+
+  if (ID) {
+
+    //prepare a Google datatable for our chart, create a column for the date and set the chart title and the axis title
+    // let data = new google.visualization.DataTable();
+    let arr = [];
+    let header = [];
+    let values = [];
+
+    let EventT0 = new Date(Settings.SimulationT0);
+    let dambreaktsidx = -1;
+
+    // data.addColumn('date', 'Date');
+    header.push("Date");
+    header.push({ role: 'annotation', type: 'string' });  //annotation for current timestep
+    header.push({ role: 'annotation', type: 'string' });  //annotation for time breach
+
+    let chartTitle = document.getElementById("chart_title");
+    document.getElementById('chart_subtitle').style.display = "none";
+    chartTitle.innerText = ID;
+    let vAxisTitle = "titel";
+    let dates = {};
+
+    if (parameterIdx == 0) {
+      vAxisTitle = "Inflow (m³/s)";
+    } else {
+      vAxisTitle = "unknown";
+    }
+
+    //count the number of scenario's wwe have. This will be the number of columns in our datatable
+    nScenarios = IWRMNodeResults.scenarios.length;
+    let nSeries = 0;
+
+    //each scenario gets its own column for the data to be stored in
+    let seriesIdx = -1
+    for (let myScenarioIdx = 0; myScenarioIdx < IWRMNodeResults.scenarios.length; myScenarioIdx++) {
+
+      //find the feature we're dealing with!
+      console.log("Finding feature ", ID);
+      let myFeature = IWRMNodeResults.scenarios[myScenarioIdx].features.find(x => x.id == ID);
+      console.log("Feature is ", myFeature);
+
+      if (parameterIdx == 0) {
+        //only plot the currently active scenario because otherwise we have too many lines!
+        seriesIdx = addDateTimeSeries(IWRMNodeResults.scenarios[myScenarioIdx].scenario, "boundaryflow", header, dates, IWRMNodeResults.scenarios[myScenarioIdx].timesteps_second, myFeature.boundaryflow, seriesIdx);
+        nSeries++;
+      } else  {
+        console.log("Error: unknown parameter index ", parameterIdx);
+      }
+    }
+
+    //finally add our observed data
+    let myObserved = measurements.locations.find(x => x.ModelID === ID);
+    if (myObserved) {
+
+      if (parameterIdx == 0 && myObserved.h) {
+        seriesIdx = addObservedSeries(header, dates, myObserved.h.dates, myObserved.h.values, seriesIdx);
+        nSeries++;
+      } else if (parameterIdx == 1 && myObserved.Q) {
+        seriesIdx = addObservedSeries(header, dates, myObserved.Q.dates, myObserved.Q.values, seriesIdx);
+        nSeries++;
+      } else if (parameterIdx == 2 && myObserved.Q) {
+        seriesIdx = addObservedSeries(header, dates, myObserved.Q.dates, myObserved.Q.values, seriesIdx, true);
+        nSeries++;
+      } else {
+        console.log("No observed data found for ", ID);
+      }
+    } else {
+      console.log("No observed data found for ", ID);
+    }
+
+    //add our header to the results array
+    arr.push(header);
+
+    //and add all our data to the results array!
+    let xAxisTitle = "Date";
+    if (xaxisrelative) {
+
+      //set the starttime of our event so we can calculate the difference in hours
+      xAxisTitle = "Tijd na aanvang simulatie (uren)"
+      if (MeshResults.scenarios[0].DambreakT0Seconds) {
+        xAxisTitle = "Tijd na aanvang bres (uren)"
+        EventT0.setSeconds(EventT0.getSeconds() + MeshResults.scenarios[0].DambreakT0Seconds);
+        dambreaktsidx = GetDambreakTimestepIndex(dates, EventT0);
+      }
+
+      let i = 0;
+      Object.keys(dates).forEach(key => {
+
+        let myDate = new Date(key);
+        let Hours = getDifferenceBetweenTwoDatesInHours(EventT0, myDate);
+
+        //only plot from two hours before our event
+        if (Hours >= 0) {
+          values = [];
+          values.push(Hours);
+
+          if (i == tsidx) {
+            values.push("nu");
+          } else {
+            values.push(null);
+          }
+
+          if (dambreaktsidx >= 0 && i == dambreaktsidx) {
+            values.push("bres")
+          } else {
+            values.push(null);
+          }
+
+          for (let j = 0; j < nSeries; j++) {
+            values.push(dates[key][j + 1]);
+          }
+          arr.push(values);
+        }
+        i++;
+      });
+
+    } else {
+      let i = 0;
+
+      //set our dambreak timestep index, if present
+      if (MeshResults.scenarios.length > 0 && MeshResults.scenarios[0].DambreakT0Seconds) {
+        EventT0.setSeconds(EventT0.getSeconds() + MeshResults.scenarios[0].DambreakT0Seconds);  //set EventT0 equal to the start of our simulation
+        dambreaktsidx = GetDambreakTimestepIndex(dates, EventT0);
+      }
+
+      Object.keys(dates).forEach(key => {
+
+        values = [];
+        values.push(new Date(key));
+
+        if (i == tsidx) {
+          values.push("nu");
+        } else {
+          values.push(null);
+        }
+
+        console.log("pushing bres");
+        if (dambreaktsidx >= 0 && i == dambreaktsidx) {
+          values.push("bres")
+        } else {
+          values.push(null);
+        }
+
+        for (let j = 0; j < nSeries; j++) {
+          values.push(dates[key][j + 1]);
+        }
+        i++;
+        arr.push(values);
+      });
+    }
+
+    // Set chart options
+    var options = {
+      // 'title': ID,
+      annotations: {
+        stem: {
+          color: '#097138'
+        },
+        style: 'line'
+      },
+      legend: {
+        position: 'right',
+        textStyle: {
+          fontName: 'Helvetica',
+          fontSize: 14,
+        }
+      },
+      chartArea: {
+        right: 200,   // set this to adjust the legend width
+        left: 60,     // set this eventually, to adjust the left margin
+      },
+      'width': 600,
+      'height': 350,
+      vAxis: {
+        title: vAxisTitle,
+        textStyle: {
+          fontName: 'Helvetica',
+          fontSize: 14,
+        },
+        titleTextStyle: {
+          fontName: 'Helvetica',
+          fontSize: 16,
+        }
+      },
+      hAxis: {
+        title: xAxisTitle,
+        textStyle: {
+          fontName: 'Helvetica',
+          fontSize: 14,
+        },
+        titleTextStyle: {
+          fontName: 'Helvetica',
+          fontSize: 16,
+        }
+        // viewWindow: {
+        //   min: 0
+        // }
+      },
+      seriesType: 'line',
+      // series: { 0: { type: 'scatter', pointSize: 1 } },
+      // series: {1: {type: 'line'}},
+    };
+
+    console.log("plotting now");
+
+    // Instantiate and draw our chart, passing in some options.
+    var chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
+    chart.draw(google.visualization.arrayToDataTable(arr), options);
+
+  }
+}
+
 function drawStructureChart(ID, parameter, tsidx) {
 
   if (ID) {
@@ -2207,7 +2427,7 @@ function drawStructureChart(ID, parameter, tsidx) {
     let dates = {};
 
     if (parameter == 'discharge') {
-      vAxisTitle = "Debiet (m3/s)";
+      vAxisTitle = "Discharge (m³/s)";
     }
 
     //count the number of scenario's wwe have. This will be the number of columns in our datatable
@@ -2241,7 +2461,7 @@ function drawStructureChart(ID, parameter, tsidx) {
     arr.push(header);
 
     //and add all our data to the results array!
-    let xAxisTitle = "Datum";
+    let xAxisTitle = "Date";
     if (xaxisrelative) {
 
       //set the starttime of our event so we can calculate the difference in hours
@@ -2402,7 +2622,7 @@ function drawChart2DDepth(ID, tsidx) {
     let arr = [];
     let header = [];
     let values = [];
-    let xAxisTitle = "Datum"
+    let xAxisTitle = "Date"
 
     let EventT0 = new Date(Settings.SimulationT0);
     let dambreaktsidx = -1;
@@ -2561,7 +2781,7 @@ function drawChart2DDepth(ID, tsidx) {
           fontName: 'Helvetica',
           fontSize: 16,
         }
-        //title: 'Datum',
+        //title: 'Date',
         // viewWindow: {
         //   min: 0
         // }
