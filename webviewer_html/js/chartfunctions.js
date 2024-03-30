@@ -1,5 +1,10 @@
 function populateWaterbalanceTable(ModelID) {
+
+  console.log("populating waterbalance table..");
+
   if (ModelID) {
+    console.log("modelID is ", ModelID);
+
     let table = document.getElementById("stats_table");
     table.innerHTML = ""; // Clear all existing content
     var header = table.createTHead();
@@ -12,9 +17,9 @@ function populateWaterbalanceTable(ModelID) {
     for (let i = 0; i < nScenarios; i++) {
       let scenario = Waterbalance.scenarios[i];
       let cellIn = row.insertCell(1 + i * 2);
-      cellIn.innerHTML = "<b>" + scenario.scenario + " In (m3)</b>";
+      cellIn.innerHTML = "<b>" + scenario.scenario + " In (m³)</b>";
       let cellOut = row.insertCell(2 + i * 2);
-      cellOut.innerHTML = "<b>" + scenario.scenario + " Out (m3)</b>";
+      cellOut.innerHTML = "<b>" + scenario.scenario + " Out (m³)</b>";
     }
 
     // Assuming AreaID is the same as ModelID and that ModelID's balance data is always present
@@ -28,8 +33,14 @@ function populateWaterbalanceTable(ModelID) {
     let totalIn = new Array(nScenarios).fill(0);
     let totalOut = new Array(nScenarios).fill(0);
 
+    console.log("iterating through the items");
+
+
     // For each item in the area, insert rows and calculate totals
     area.items.forEach(item => {
+
+      console.log("item ", item);
+
       let row = table.insertRow();
       let cell = row.insertCell(0);
       cell.innerHTML = item.ID;
@@ -92,8 +103,15 @@ function populateWaterbalanceTable(ModelID) {
 
     }
 
+    console.log("table is now ", document.getElementById('stats_table'));
+
+    console.log("showing table");
 
     document.getElementById('stats_table').style.display = "block";
+
+
+    // Also, make sure to show the div that contains the table
+    document.getElementById('stats_div').style.display = "block";
 
   } else {
     alert("ModelID is missing");
@@ -600,7 +618,7 @@ function drawWaterBalanceChart(AreaID) {
         //title: 'Time (s)', 
         //textPosition: 'none'
       },
-      vAxis: { title: 'In (m3)' },
+      vAxis: { title: 'In (m³)' },
       legend: { position: 'none' }, // No legend for inflow chart
       series: {}
     };
@@ -614,7 +632,7 @@ function drawWaterBalanceChart(AreaID) {
         textPosition: 'out'
       },
       vAxis: {
-        title: 'Out (m3)',
+        title: 'Out (m³)',
         direction: 1, // This will flip the vertical axis
         textPosition: 'out' // Adjust text position if needed
       },
@@ -730,7 +748,7 @@ function drawChart1DObject(ModelID, objectType, parameterIdx) {
         break;
       case 'structure':
         titleLeader = "Verloop debiet ";
-        vAxisTitle = "Debiet (m3/s)"
+        vAxisTitle = "Debiet (m³/s)"
         nScenarios = StructureResults.scenarios.length;
         for (let scenarioIdx = 0; scenarioIdx < StructureResults.scenarios.length; scenarioIdx++) {
           data.addColumn('number', StructureResults.scenarios[scenarioIdx].scenario);
@@ -1327,9 +1345,9 @@ function drawDambreakChart(ID, active_dambreak_parameter, tsidx) {
     } else if (active_dambreak_parameter == 'dambreak_crest_width') {
       vAxisTitle = "Breedte bres (m)";
     } else if (active_dambreak_parameter == 'dambreak_discharge') {
-      vAxisTitle = "Debiet bres (m3/s)";
+      vAxisTitle = "Debiet bres (m³/s)";
     } else if (active_dambreak_parameter == 'dambreak_cumulative_discharge') {
-      vAxisTitle = "Cumulatief volume (m3)";
+      vAxisTitle = "Cumulatief volume (m³)";
     } else if (active_dambreak_parameter == 'dambreak_head') {
       vAxisTitle = "Verval bres (m)";
     } else if (active_dambreak_parameter == 'dambreak_growth') {
@@ -1555,9 +1573,9 @@ function drawObservationpointChart(ID, parameterIdx, tsidx) {
     if (parameterIdx == 0) {
       vAxisTitle = "Waterhoogte (m + NAP)";
     } else if (parameterIdx == 1) {
-      vAxisTitle = "Debiet (m3/s)";
+      vAxisTitle = "Debiet (m³/s)";
     } else if (parameterIdx == 2) {
-      vAxisTitle = "Cum. Volume (m3)";
+      vAxisTitle = "Cum. Volume (m³)";
     }
 
     //count the number of scenario's wwe have. This will be the number of columns in our datatable
@@ -1997,7 +2015,7 @@ function drawBasinChart(ID, parameterIdx, tsidx) {
     if (parameterIdx == 0) {
       vAxisTitle = "Level (m + AD)";
     } else if (parameterIdx == 1) {
-      vAxisTitle = "Storage (m3)";
+      vAxisTitle = "Storage (m³)";
     }
 
     //count the number of scenario's wwe have. This will be the number of columns in our datatable
@@ -2235,7 +2253,7 @@ function drawBoundaryChart(ID, parameterIdx, tsidx) {
         //only plot the currently active scenario because otherwise we have too many lines!
         seriesIdx = addDateTimeSeries(IWRMNodeResults.scenarios[myScenarioIdx].scenario, "boundaryflow", header, dates, IWRMNodeResults.scenarios[myScenarioIdx].timesteps_second, myFeature.boundaryflow, seriesIdx);
         nSeries++;
-      } else  {
+      } else {
         console.log("Error: unknown parameter index ", parameterIdx);
       }
     }
