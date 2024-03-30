@@ -12,9 +12,9 @@ function populateWaterbalanceTable(ModelID) {
     for (let i = 0; i < nScenarios; i++) {
       let scenario = Waterbalance.scenarios[i];
       let cellIn = row.insertCell(1 + i * 2);
-      cellIn.innerHTML = "<b>" + scenario.scenario + " In (m³)</b>";
+      cellIn.innerHTML = "<b>" + scenario.scenario + " In (m3)</b>";
       let cellOut = row.insertCell(2 + i * 2);
-      cellOut.innerHTML = "<b>" + scenario.scenario + " Out (m³)</b>";
+      cellOut.innerHTML = "<b>" + scenario.scenario + " Out (m3)</b>";
     }
 
     // Assuming AreaID is the same as ModelID and that ModelID's balance data is always present
@@ -28,19 +28,19 @@ function populateWaterbalanceTable(ModelID) {
     let totalIn = new Array(nScenarios).fill(0);
     let totalOut = new Array(nScenarios).fill(0);
 
-    // For each link in the area, insert rows and calculate totals
-    area.links.forEach(link => {
+    // For each item in the area, insert rows and calculate totals
+    area.items.forEach(item => {
       let row = table.insertRow();
       let cell = row.insertCell(0);
-      cell.innerHTML = link.ID;
+      cell.innerHTML = item.ID;
 
       for (let i = 0; i < nScenarios; i++) {
         let scenario = Waterbalance.scenarios[i];
-        let linkData = scenario.balance.find(a => a.AreaID === ModelID).links.find(l => l.ID === link.ID);
+        let itemData = scenario.balance.find(a => a.AreaID === ModelID).items.find(l => l.ID === item.ID);
 
         // Calculate sums for inflow and outflow
-        let sumIn = linkData.in.reduce((a, b) => a + b, 0);
-        let sumOut = linkData.out.reduce((a, b) => a + b, 0);
+        let sumIn = itemData.in.reduce((a, b) => a + b, 0);
+        let sumOut = itemData.out.reduce((a, b) => a + b, 0);
 
         // Add to total sums for the scenario
         totalIn[i] += sumIn;
@@ -556,57 +556,32 @@ function drawWaterBalanceChart(AreaID) {
     const hasNonZeroOutflow = (link) => link.out.some(value => value !== 0);
 
     // Add columns conditionally for inflow
-    area.links.forEach(link => {
-      console.log("Adding link ", link.ID);
-      datain.addColumn('number', link.ID);
+    area.items.forEach(item => {
+      datain.addColumn('number', item.ID);
     });
-
-    // Add columns conditionally for inflow boundaries
-    area.boundaries.forEach(boundary => {
-      console.log("Adding boundary ", boundary.ID);
-      datain.addColumn('number', boundary.ID);
-    })
 
     // Add columns conditionally for outflow
-    area.links.forEach(link => {
-      dataout.addColumn('number', link.ID);
+    area.items.forEach(item => {
+      dataout.addColumn('number', item.ID);
     });
 
-    // Add columns conditionally for outflow boundaries
-    area.boundaries.forEach(boundary => {
-      dataout.addColumn('number', boundary.ID);
-    });
 
     const timesteps = scenario.timesteps;
     for (let i = 0; i < timesteps.length; i++) {
       const rowin = [timesteps[i]];
       const rowout = [timesteps[i]];
 
-      // Consistent series addition for inflow via links
-      area.links.forEach(link => {
-        const inflowValue = link.in[i];
-        //console.log("inflow is ", inflowValue);
+      // Consistent series addition for inflow
+      area.items.forEach(item => {
+        const inflowValue = item.in[i];
+        console.log("inflow is ", inflowValue);
         rowin.push(inflowValue);
       });
 
-      // Consistent series addition for inflow from boundaries
-      area.boundaries.forEach(boundary => {
-        const inflowValue = boundary.in[i];
-        //console.log("boundary inflow is ", inflowValue);
-        rowin.push(inflowValue);
-      });
-
-      // Consistent series addition for outflow via links
-      area.links.forEach(link => {
-        const outflowValue = link.out[i];
-       // console.log("outflow is ", outflowValue);
-        rowout.push(outflowValue);
-      });
-
-      // Consistent series addition for outflow from boundaries
-      area.boundaries.forEach(boundary => {
-        const outflowValue = boundary.out[i];
-       // console.log("boundary outflow is ", outflowValue);
+      // Consistent series addition for outflow
+      area.items.forEach(item => {
+        const outflowValue = item.out[i];
+        console.log("outflow is ", outflowValue);
         rowout.push(outflowValue);
       });
 
@@ -625,7 +600,7 @@ function drawWaterBalanceChart(AreaID) {
         //title: 'Time (s)', 
         //textPosition: 'none'
       },
-      vAxis: { title: 'In (m³)' },
+      vAxis: { title: 'In (m3)' },
       legend: { position: 'none' }, // No legend for inflow chart
       series: {}
     };
@@ -639,7 +614,7 @@ function drawWaterBalanceChart(AreaID) {
         textPosition: 'out'
       },
       vAxis: {
-        title: 'Out (m³)',
+        title: 'Out (m3)',
         direction: 1, // This will flip the vertical axis
         textPosition: 'out' // Adjust text position if needed
       },
@@ -648,16 +623,16 @@ function drawWaterBalanceChart(AreaID) {
     };
 
     let seriesCount = 0;
-    area.links.forEach((link, index) => {
+    area.items.forEach((item, index) => {
       seriesCount++;
       optionsIn.series[seriesCount] = {
         color: getColor(index),
-        labelInLegend: link.ID,
+        labelInLegend: item.ID,
         areaOpacity: 0.5 // Set as needed
       };
       optionsOut.series[seriesCount] = {
         color: getColor(index),
-        labelInLegend: link.ID,
+        labelInLegend: item.ID,
         areaOpacity: 0.5 // Set as needed
       };
     });
@@ -670,8 +645,8 @@ function drawWaterBalanceChart(AreaID) {
     var jsonDataOut = dataout.toJSON();
 
     // Log the JSON string to the console
-    console.log("json data in is :", jsonDataIn);
-    console.log("json data out is : ", jsonDataOut);
+    console.log(jsonDataIn);
+    console.log(jsonDataOut);
 
     const chartin = new google.visualization.AreaChart(document.getElementById('chartin_div'));
     chartin.draw(datain, optionsIn);
@@ -754,8 +729,8 @@ function drawChart1DObject(ModelID, objectType, parameterIdx) {
         }
         break;
       case 'structure':
-        titleLeader = "Discharge ";
-        vAxisTitle = "Discharge (m³/s)"
+        titleLeader = "Verloop debiet ";
+        vAxisTitle = "Debiet (m3/s)"
         nScenarios = StructureResults.scenarios.length;
         for (let scenarioIdx = 0; scenarioIdx < StructureResults.scenarios.length; scenarioIdx++) {
           data.addColumn('number', StructureResults.scenarios[scenarioIdx].scenario);
@@ -1352,9 +1327,9 @@ function drawDambreakChart(ID, active_dambreak_parameter, tsidx) {
     } else if (active_dambreak_parameter == 'dambreak_crest_width') {
       vAxisTitle = "Breedte bres (m)";
     } else if (active_dambreak_parameter == 'dambreak_discharge') {
-      vAxisTitle = "Dicharge dambreak (m³/s)";
+      vAxisTitle = "Debiet bres (m3/s)";
     } else if (active_dambreak_parameter == 'dambreak_cumulative_discharge') {
-      vAxisTitle = "Cumulative volume (m³)";
+      vAxisTitle = "Cumulatief volume (m3)";
     } else if (active_dambreak_parameter == 'dambreak_head') {
       vAxisTitle = "Verval bres (m)";
     } else if (active_dambreak_parameter == 'dambreak_growth') {
@@ -1580,9 +1555,9 @@ function drawObservationpointChart(ID, parameterIdx, tsidx) {
     if (parameterIdx == 0) {
       vAxisTitle = "Waterhoogte (m + NAP)";
     } else if (parameterIdx == 1) {
-      vAxisTitle = "Discharge (m³/s)";
+      vAxisTitle = "Debiet (m3/s)";
     } else if (parameterIdx == 2) {
-      vAxisTitle = "Cum. Volume (m³)";
+      vAxisTitle = "Cum. Volume (m3)";
     }
 
     //count the number of scenario's wwe have. This will be the number of columns in our datatable
@@ -2022,7 +1997,7 @@ function drawBasinChart(ID, parameterIdx, tsidx) {
     if (parameterIdx == 0) {
       vAxisTitle = "Level (m + AD)";
     } else if (parameterIdx == 1) {
-      vAxisTitle = "Storage (m³)";
+      vAxisTitle = "Storage (m3)";
     }
 
     //count the number of scenario's wwe have. This will be the number of columns in our datatable
@@ -2260,7 +2235,7 @@ function drawBoundaryChart(ID, parameterIdx, tsidx) {
         //only plot the currently active scenario because otherwise we have too many lines!
         seriesIdx = addDateTimeSeries(IWRMNodeResults.scenarios[myScenarioIdx].scenario, "boundaryflow", header, dates, IWRMNodeResults.scenarios[myScenarioIdx].timesteps_second, myFeature.boundaryflow, seriesIdx);
         nSeries++;
-      } else {
+      } else  {
         console.log("Error: unknown parameter index ", parameterIdx);
       }
     }
