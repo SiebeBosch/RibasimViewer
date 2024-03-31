@@ -549,7 +549,10 @@ function updateChartTitle(ChartTitle) {
 }
 
 function drawWaterBalanceChart(AreaID) {
-  console.log("Drawing waterbalance for scenario ", scenarioIdx, " and area ", AreaID);
+  var inMax = 0;  //positive values
+  var outMin = 0; //negative values
+  var curInMax = 0;
+  var curOutMin =0;
 
   if (AreaID) {
     const scenario = Waterbalance.scenarios[scenarioIdx];
@@ -569,102 +572,105 @@ function drawWaterBalanceChart(AreaID) {
     datain.addColumn('number', 'Time');
     dataout.addColumn('number', 'Time');
 
-    // Function to check if a link has non-zero inflow or outflow data
-    const hasNonZeroInflow = (link) => link.in.some(value => value !== 0);
-    const hasNonZeroOutflow = (link) => link.out.some(value => value !== 0);
-
     // Add columns conditionally for inflow
     area.items.forEach(item => {
       datain.addColumn('number', item.ID);
-    });
-
-    // Add columns conditionally for outflow
-    area.items.forEach(item => {
       dataout.addColumn('number', item.ID);
     });
-
 
     const timesteps = scenario.timesteps;
     for (let i = 0; i < timesteps.length; i++) {
       const rowin = [timesteps[i]];
       const rowout = [timesteps[i]];
+	  curInMax = 0;
+	  curOutMin =0;
 
-      // Consistent series addition for inflow
       area.items.forEach(item => {
-        const inflowValue = item.in[i];
-        console.log("inflow is ", inflowValue);
-        rowin.push(inflowValue);
+        rowin.push(Math.abs(item.in[i]) < 0.0001 ? null : item.in[i]);
+        rowout.push(Math.abs(item.out[i]) < 0.0001 ? null : item.out[i]);
+		curInMax += item.in[i];
+		curOutMin += item.out[i];		
       });
-
-      // Consistent series addition for outflow
-      area.items.forEach(item => {
-        const outflowValue = item.out[i];
-        console.log("outflow is ", outflowValue);
-        rowout.push(outflowValue);
-      });
-
+      
       datain.addRow(rowin);
       dataout.addRow(rowout);
-    }
+	  
+	  if (curInMax > inMax){inMax = curInMax};
+	  if (curOutMin < outMin){outMin = curOutMin};
+	}
+
+	console.log("inMax is ", inMax);
+	console.log("outMin is ", outMin);
+
+	//here we calculate the desired maximum for our axis. First we round up our highest value to the nearest power of 10.
+	var maxVal = Math.max(inMax, -outMin);
+	var maxAxis = roundUpToNiceNumber(maxVal);
+	
+	console.log("max axis is ", maxAxis);
+	
+    const inViewWindow = {
+      min: 0, // set your calculated minimum value
+      max: maxAxis, // set your calculated maximum value
+    };
+
+    const outViewWindow = {
+      max: 0, // set your calculated maximum value
+      min: -maxAxis, // set your calculated minimum value
+    };
 
     // Define chart options
     updateChartTitle('Water balance for area ' + AreaID);
 
     // Define chart options for the chartin (inflow chart)
     const optionsIn = {
-      chartArea: { width: '80%', height: '80%', top: '10%', bottom: '20' }, // Adjust top and bottom as needed
+      chartArea: { width: '80%', height: '80%', top: '20', bottom: '0%' },
       isStacked: true,
       hAxis: {
         //title: 'Time (s)', 
-        //textPosition: 'none'
+        textPosition: 'out'
       },
-      vAxis: { title: 'In (m³)' },
-      legend: { position: 'none' }, // No legend for inflow chart
+      vAxis: { 
+	    title: 'In (m³)', 
+		viewWindow: inViewWindow,
+        direction: 1,
+        textPosition: 'out' // Adjust text position if needed
+	  },
+      legend: { position: 'top' }, // No legend for inflow chart
       series: {}
     };
 
     // Define chart options for the chartout (outflow chart)
     const optionsOut = {
       isStacked: true,
-      chartArea: { width: '80%', height: '80%', top: '20', bottom: '10%' }, // Adjust top and bottom as needed
-      hAxis: {
+      chartArea: { width: '80%', height: '80%', top: '0', bottom: '20%' },
+	  hAxis: {
         title: 'Time (s)',
         textPosition: 'out'
       },
       vAxis: {
         title: 'Out (m³)',
+		viewWindow: outViewWindow,
         direction: 1, // This will flip the vertical axis
         textPosition: 'out' // Adjust text position if needed
       },
-      legend: { position: 'bottom' }, // Legend for outflow chart
+      legend: { position: 'none' }, // Legend for outflow chart
       series: {}
     };
 
     let seriesCount = 0;
     area.items.forEach((item, index) => {
-      seriesCount++;
       optionsIn.series[seriesCount] = {
-        color: getColor(index),
+        color: getColor(seriesCount),
         labelInLegend: item.ID,
-        areaOpacity: 0.5 // Set as needed
+        areaOpacity: 1 // Set as needed
       };
       optionsOut.series[seriesCount] = {
-        color: getColor(index),
+        color: getColor(seriesCount),
         labelInLegend: item.ID,
-        areaOpacity: 0.5 // Set as needed
+        areaOpacity: 1 // Set as needed
       };
+      seriesCount++;
     });
-
-    console.log("series found: ", seriesCount);
-
-
-    // Convert the DataTable to a JSON string
-    var jsonDataIn = datain.toJSON();
-    var jsonDataOut = dataout.toJSON();
-
-    // Log the JSON string to the console
-    console.log(jsonDataIn);
-    console.log(jsonDataOut);
 
     const chartin = new google.visualization.AreaChart(document.getElementById('chartin_div'));
     chartin.draw(datain, optionsIn);
@@ -677,8 +683,6 @@ function drawWaterBalanceChart(AreaID) {
   } else {
     alert("AreaID is missing");
   }
-
-
 }
 
 // Helper function to get distinct colors for each link
@@ -1093,7 +1097,7 @@ function drawChart1DObject(ModelID, objectType, parameterIdx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         },
         viewWindow: {
           max: SimMax
@@ -1107,7 +1111,7 @@ function drawChart1DObject(ModelID, objectType, parameterIdx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
         // viewWindow: {
         //   min: 0
@@ -1514,7 +1518,7 @@ function drawDambreakChart(ID, active_dambreak_parameter, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
       },
       hAxis: {
@@ -1525,7 +1529,7 @@ function drawDambreakChart(ID, active_dambreak_parameter, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
         // viewWindow: {
         //   min: 0
@@ -1734,7 +1738,7 @@ function drawObservationpointChart(ID, parameterIdx, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
       },
       hAxis: {
@@ -1745,7 +1749,7 @@ function drawObservationpointChart(ID, parameterIdx, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
         // viewWindow: {
         //   min: 0
@@ -1953,7 +1957,7 @@ function drawBackwaterChart(ID, parameterIdx, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
       },
       hAxis: {
@@ -1964,7 +1968,7 @@ function drawBackwaterChart(ID, parameterIdx, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
         // viewWindow: {
         //   min: 0
@@ -1987,8 +1991,6 @@ function drawBackwaterChart(ID, parameterIdx, tsidx) {
 
 
 function drawBasinChart(ID, parameterIdx, tsidx) {
-
-  console.log("drawing chart for basin ", ID, " parameterIdx ", parameterIdx, " tsidx ", tsidx);
 
   if (ID) {
 
@@ -2027,10 +2029,8 @@ function drawBasinChart(ID, parameterIdx, tsidx) {
     for (let myScenarioIdx = 0; myScenarioIdx < IWRMNodeResults.scenarios.length; myScenarioIdx++) {
 
       //find the feature we're dealing with!
-      console.log("Finding feature ", ID);
       let myFeature = IWRMNodeResults.scenarios[myScenarioIdx].features.find(x => x.id == ID);
-      console.log("Feature is ", myFeature);
-
+	
       if (parameterIdx == 0) {
         //only plot the currently active scenario because otherwise we have too many lines!
         seriesIdx = addDateTimeSeries(IWRMNodeResults.scenarios[myScenarioIdx].scenario, "level", header, dates, IWRMNodeResults.scenarios[myScenarioIdx].timesteps_second, myFeature.level, seriesIdx);
@@ -2168,11 +2168,11 @@ function drawBasinChart(ID, parameterIdx, tsidx) {
         title: vAxisTitle,
         textStyle: {
           fontName: 'Helvetica',
-          fontSize: 14,
+          fontSize: 12,
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
       },
       hAxis: {
@@ -2183,7 +2183,7 @@ function drawBasinChart(ID, parameterIdx, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
         // viewWindow: {
         //   min: 0
@@ -2389,7 +2389,7 @@ function drawBoundaryChart(ID, parameterIdx, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
       },
       hAxis: {
@@ -2400,7 +2400,7 @@ function drawBoundaryChart(ID, parameterIdx, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
         // viewWindow: {
         //   min: 0
@@ -2585,7 +2585,7 @@ function drawStructureChart(ID, parameter, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
       },
       hAxis: {
@@ -2596,7 +2596,7 @@ function drawStructureChart(ID, parameter, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
         // viewWindow: {
         //   min: 0
@@ -2786,7 +2786,7 @@ function drawChart2DDepth(ID, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
       },
       hAxis: {
@@ -2797,7 +2797,7 @@ function drawChart2DDepth(ID, tsidx) {
         },
         titleTextStyle: {
           fontName: 'Helvetica',
-          fontSize: 16,
+          fontSize: 14,
         }
         //title: 'Date',
         // viewWindow: {

@@ -172,7 +172,7 @@
       <div class="radiobutton"><input type="radio" name="backdrop" value="LUFO"
           onclick="refreshEntireMap('LUFO')">Google aerial</input></div>
       <div class="radiobutton"><input type="radio" name="backdrop" value="OSM_DARK"
-          onclick="refreshEntireMap('OSM_DARK')">donker</input></div>
+          onclick="refreshEntireMap('OSM_DARK')">Dark</input></div>
     </div>
     <div class="radiogroup">
       <div class="radiobutton" id="divobservationpoints"><input type="checkbox" id="observationpoints" checked="true"
@@ -211,7 +211,7 @@
     <hr class="divider">
     <div class="radiogroup">
       <div class="sectionheader">Overlays</div>
-      <div class="radiobutton"><input type="checkbox" id="areas" onclick="plotAreas()">areas</input></div>
+      <div class="radiobutton"><input type="checkbox" id="areas" onclick="plotAreas()">Waterbalance areas</input></div>
     </div>
     <hr class="divider">
     <div class="radiogroup">
@@ -250,7 +250,7 @@
       <div class="sectionheader">Options</div>
       <div class="radiobutton"><input type="checkbox" id="grafiek" checked="true" onclick="toggleChart()">show
         chart</input></div>
-      <div class="radiobutton"><input type="checkbox" id="grafiek" onclick="toggleSlider()">show
+      <div class="radiobutton" style="display: none;"><input type="checkbox" id="grafiek" onclick="toggleSlider()">show
         slider</input></div>
     </div>
     <hr class="divider" style="display: none;">
@@ -260,7 +260,7 @@
           onChange="changeTransparency()"></div>
     </div>
     <hr class="divider">
-    <img id="logo" src="./images/HYDRO_LOGO_DEF.png">
+    <img id="logo" src="">
   </div>
   <div id="mapid"></div>
   <div id="bubble"></div>

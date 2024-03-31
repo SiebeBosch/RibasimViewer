@@ -38,7 +38,7 @@ async function plotBackgroundMap(bg, MAPBOX_TOKEN) {
       id: 'mapbox/dark-v10',
       tileSize: 512,
       zoomOffset: -1,
-      accessToken: CONFIG.MAPBOX_TOKEN
+      accessToken: MAPBOX_TOKEN
     }).addTo(backgroundLayerGroup);
 
   }

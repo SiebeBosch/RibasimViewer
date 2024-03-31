@@ -40,6 +40,33 @@ function PopulateDropdownListFromJSON(Name, ArrayIdx) {
     }
 }
 
+function roundUpToNearestPowerOfTen(value) {
+  // Calculate the order of magnitude of the maximum value
+  const order = Math.ceil(Math.log10(value < 1 ? 1 : value));
+  // Calculate the nearest power of ten
+  const nearestPowerOfTen = Math.pow(10, order);
+  return nearestPowerOfTen;
+}
+
+function roundUpToNiceNumber(value) {
+  if (value <= 0) return 0;
+
+  // Find the power of 10 just below the value.
+  const order = Math.floor(Math.log10(value));
+  const base = Math.pow(10, order);
+
+  // Find the smallest multiple of the base that exceeds the value
+  let niceFactor = Math.ceil(value / base);
+
+  // If the nice factor is above 5, we round it to the nearest multiple of 5 or 10
+  if (niceFactor > 5) {
+    niceFactor = Math.ceil(niceFactor / 5) * 5;
+  }
+
+  // Multiply the base by the nice factor.
+  return base * niceFactor;
+}
+
 function convertTimeSpanToDayHourMinute(seconds) {
   const days = Math.floor(seconds / (24 * 60 * 60));
   const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
