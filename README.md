@@ -3,8 +3,7 @@ A universal webviewer for Deltares' RIBASIM projects.
 The webviewer consists solely of HTML, Javascript and CSS, thus making it extremely lightweight and portable. A webserver is NOT necessary.
 Launching the application is simply a matter of double-clicking index.html.
 
-The viewer can be populated with a RIBASIM model topology and simulation results by using the Community Edition of Hydroconsult's HydroToolbox software.
-![Alt text](./images/example.png)
+The viewer can be populated with a RIBASIM model topology and simulation results by using the Community Edition of Hydroconsult's [HydroToolbox](https://www.dropbox.com/scl/fi/o28lydk77onp6rwuhhpps/HydroToolboxSetup-2.9.9.3-x64.zip?rlkey=70ljv2hniubtj3itmcfec1wwy&dl=0) software.
 
 ## Requirements
 A token for Mapbox is required in order to plot the background map. This token should be implemented in config.js in the /js folder:
